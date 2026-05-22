@@ -1,17 +1,16 @@
 {% extends 'base.html' %}
 {% block content %}
 <div class="form-wrapper">
-    <form class="glass-form" action='/registrar' method="POST">
-        <h1>Criar conta</h1>
-        <p>Comece sua jornada virtual</p>
+    <form class="glass-form" action="/alterar_senha" method="POST">
+        <h1>Alterar senha</h1>
+        <p>Digite sua senha atual e a nova senha</p>
 
-        <input type="text" name="nomeForm" placeholder="Nome"
-               value="{{ nome_digitado or '' }}">
-        {% if erro_nome %}
-            <p class="erro">{{ erro_nome }}</p>
+        <input type="password" name="senhaAtualForm" placeholder="Senha atual">
+        {% if erro_atual %}
+            <p class="erro">{{ erro_atual }}</p>
         {% endif %}
 
-        <input type="password" name="senhaForm" id="senhaInput" placeholder="Senha">
+        <input type="password" name="senhaForm" id="senhaInput" placeholder="Nova senha">
         {% if erro_senha %}
             <p class="erro">{{ erro_senha }}</p>
         {% endif %}
@@ -23,24 +22,13 @@
             <li id="req-especial"> <span class="icone">✖</span> Um caractere especial (!@#$...)</li>
         </ul>
 
-        <input type="password" name="confirmaForm" placeholder="Confirmar senha">
+        <input type="password" name="confirmaForm" placeholder="Confirmar nova senha">
         {% if erro_confirma %}
             <p class="erro">{{ erro_confirma }}</p>
         {% endif %}
 
-        <input type="text" name="perguntaForm" placeholder="Sua pergunta secreta"
-               value="{{ pergunta_digitada or '' }}">
-        {% if erro_pergunta %}
-            <p class="erro">{{ erro_pergunta }}</p>
-        {% endif %}
-
-        <input type="text" name="respostaForm" placeholder="Resposta da pergunta secreta">
-        {% if erro_resposta %}
-            <p class="erro">{{ erro_resposta }}</p>
-        {% endif %}
-
-        <button type="submit">Cadastre-se</button>
-        <span>Já tem uma conta? <a href="/login">Login</a></span>
+        <button type="submit">Salvar nova senha</button>
+        <span><a href="/home">Cancelar</a></span>
     </form>
 </div>
 

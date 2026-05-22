@@ -2,22 +2,21 @@
 {% block content %}
 <div class="form-wrapper">
     <form class="glass-form" action="/login" method="POST">
-            <h1>Bem-vinda de volta</h1>
-            <p>Entre no seu mundo virtual</p>
-            {% if erro %}
-                <p style="color:red;">{{ erro }}</p>
-            {% endif %}
+        <h1>Bem-vinda de volta</h1>
+        <p>Entre no seu mundo virtual</p>
+        {% if erro %}
+            <p class="erro">{{ erro }}</p>
+        {% endif %}
 
-            <input type="text"  name="nomeForm"  placeholder="Usuário">
-            <input type="password"  name="senhaForm"  placeholder="Senha">
-    
+        <input type="text" name="nomeForm" placeholder="Usuário">
+        <input type="password" name="senhaForm" placeholder="Senha">
 
         <button type="submit">Login</button>
 
         <div class="register-link">
-            <p>Não tem uma conta?<a href="/registrar">Cadastre-se</a></p>
+            <p>Não tem uma conta? <a href="/registrar">Cadastre-se</a></p>
+            <p>Esqueceu a senha? <a href="/recuperar">Recuperar senha</a></p>
         </div>
-
     </form>
 </div>
 {% endblock %}
