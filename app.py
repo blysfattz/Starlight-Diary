@@ -3,6 +3,7 @@ from flask_login import LoginManager, login_user, login_required, logout_user, c
 from werkzeug.security import generate_password_hash, check_password_hash
 from db import db
 import os
+from werkzeug.utils import secure_filename
 import re
 
 app = Flask(__name__)
@@ -40,7 +41,7 @@ def login():
     if not user or not check_password_hash(user.senha, senha):
         return render_template('login.html', erro='Nome ou senha incorretos.')
     login_user(user)
-    return redirect(url_for('home'))
+    return redirect(url_for('profile'))
 
 @app.route('/registrar', methods=['POST', 'GET'])
 def registrar():
@@ -91,7 +92,32 @@ def registrar():
     db.session.add(novo_usuario)
     db.session.commit()
     login_user(novo_usuario)
-    return redirect(url_for("home"))
+    return redirect(url_for("profile"))
+
+#alteração para o dashboard do usuário -15/06
+@app.route("/profile")
+@login_required
+def profile():
+    return render_template("profile.html",usuario=current_user)
+
+# rota para atualizar o perfil do usuário, incluindo upload de avatar -15/06
+UPLOAD_FOLDER = os.path.join('static', 'uploads')
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
+@app.route('/update-profile', methods=['POST'])
+@login_required
+def update_profile():
+    current_user.nome = request.form.get("nome", current_user.nome).strip()
+    current_user.bio  = request.form.get("bio", "").strip()
+
+    arquivo = request.files.get("avatar")
+    if arquivo and arquivo.filename:
+        nome_arquivo = secure_filename(arquivo.filename)
+        arquivo.save(os.path.join(UPLOAD_FOLDER, nome_arquivo))
+        current_user.avatar = nome_arquivo
+
+    db.session.commit()
+    return redirect(url_for('profile'))
 
 @app.route('/recuperar', methods=['GET', 'POST'])
 def recuperar():
@@ -179,7 +205,7 @@ def alterar_senha():
 
     current_user.senha = generate_password_hash(senha_nova)
     db.session.commit()
-    return redirect(url_for('home'))
+    return redirect(url_for('profile'))
 
 @app.route('/logout')
 @login_required

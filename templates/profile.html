@@ -1,0 +1,298 @@
+
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>StarLight Diary - Profile</title>
+
+    <link rel="stylesheet"
+          href="{{ url_for('static',
+          filename='profile.css') }}">
+
+</head>
+
+<body>
+
+<div class="dashboard">
+
+    <!-- SIDEBAR -->
+
+    <aside class="sidebar">
+
+        <div class="logo">
+
+            StarLight Diary
+
+        </div>
+
+        <nav>
+
+            <a href="#" class="active">
+                👤 Perfil
+            </a>
+
+            <a href="#">
+                ♡ Humor
+            </a>
+
+            <a href="#">
+                ☆ Favoritos
+            </a>
+
+        </nav>
+
+    </aside>
+
+    <!-- CONTENT -->
+
+    <main class="content">
+
+        <!-- HEADER -->
+
+        <header class="header">
+
+            <button
+                class="edit-profile-btn"
+                onclick="openModal()">
+
+                ✎ Editar Perfil
+            </button>
+
+            <a href="/alterar_senha">
+                <button type="button" class="edit-profile-btn">
+                      Alterar Senha
+                </button>
+            </a>
+
+            <a href="/logout">
+                <button type="button" class="edit-profile-btn">
+                     Sair
+                </button>
+            </a>
+
+            <div class="user-info">
+
+                <div class="mini-avatar">
+
+                    {{ usuario.nome[0]|upper }}
+
+                </div>
+
+                <div>
+
+                    <h4>
+                        {{ usuario.nome }}
+                    </h4>
+
+                    <span>
+                        {{ usuario.email }}
+                    </span>
+
+                </div>
+
+            </div>
+
+        </header>
+
+        <!-- PROFILE CARD -->
+
+        <section class="profile-card">
+
+            <div class="avatar">
+
+                {% if usuario.avatar %}
+
+                <img
+                src="{{ url_for(
+                'static',
+                filename='uploads/' + usuario.avatar
+                ) }}">
+
+                {% else %}
+
+                {{ usuario.nome[0]|upper }}
+
+                {% endif %}
+
+            </div>
+
+            <h1>
+
+                {{ usuario.nome }}
+
+            </h1>
+
+            <p>
+
+                {% if usuario.bio %}
+
+                    {{ usuario.bio }}
+
+                {% else %}
+
+                    Share something magical about yourself...
+
+                {% endif %}
+
+            </p>
+
+        </section>
+
+        <!-- STATS -->
+
+        <section class="stats">
+
+            <h2>Suas Estatísticas Mágicas</h2>
+
+            <div class="stat">
+
+                <div class="stat-header">
+
+                    <span>
+                        Porcentagem do perfil
+                    </span>
+
+                    <span>
+                        {{ usuario.percentual_perfil() }}%
+                    </span>
+
+                </div>
+
+                <div class="bar">
+
+                    <div
+                    class="fill"
+                    style="width:
+                    {{ usuario.percentual_perfil() }}%">
+                    </div>
+
+                </div>
+
+            </div>
+
+            <div class="stat">
+
+                <div class="stat-header">
+
+                    <span>
+                        Resgistros de Humor
+                    </span>
+
+                    <span>
+                        {{ usuario.total_humores }}
+                    </span>
+
+                </div>
+
+                <div class="bar">
+
+                    <div
+                    class="fill"
+                    style="width:
+                    {{ usuario.total_humores * 2 }}%">
+                    </div>
+
+                </div>
+
+            </div>
+
+            <div class="stat">
+
+                <div class="stat-header">
+
+                    <span>
+                        Interesses adicionados
+                    </span>
+
+                    <span>
+                        {{ usuario.total_interesses }}
+                    </span>
+
+                </div>
+
+                <div class="bar">
+
+                    <div
+                    class="fill"
+                    style="width:
+                    {{ usuario.total_interesses * 10 }}%">
+                    </div>
+
+                </div>
+
+            </div>
+
+        </section>
+
+    </main>
+
+</div>
+
+<!-- MODAL -->
+
+<div
+class="modal-overlay"
+id="modal">
+
+    <div class="modal">
+
+        <button
+        class="close-btn"
+        onclick="closeModal()">
+
+            ×
+
+        </button>
+
+        <h2>Editar Seu Perfil</h2>
+
+        <form
+        method="POST"
+        action="/update-profile"
+        enctype="multipart/form-data">
+
+            <label>Nome</label>
+
+            <input
+            type="text"
+            name="nome"
+            value="{{ usuario.nome }}">
+
+            <label>Bio</label>
+
+            <textarea
+            name="bio">{{ usuario.bio }}</textarea>
+
+            <label>Avatar</label>
+
+            <input
+            type="file"
+            name="avatar">
+
+            <button
+            type="submit"
+            class="save-btn">
+
+                Salvar Alterações
+
+            </button>
+
+        </form>
+
+    </div>
+
+</div>
+
+<script
+src="{{ url_for('static',
+filename='profile.js') }}">
+</script>
+
+</body>
+</html>
