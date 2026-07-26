@@ -4,7 +4,7 @@
     <form class="glass-form" action="/recuperar/nova_senha" method="POST">
         <h1>Nova senha</h1>
         <p>Crie uma nova senha para sua conta</p>
-        <input type="hidden" name="nomeForm" value="{{ nome }}">
+        <input type="hidden" name="emailForm" value="{{ email }}">
         <input type="password" name="senhaForm" placeholder="Nova senha">
         {% if erro_senha %}
             <p class="erro">{{ erro_senha }}</p>

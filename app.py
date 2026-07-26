@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for
+from flask import Flask, render_template, request, redirect, url_for, jsonify
 from flask_login import LoginManager, login_user, login_required, logout_user, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from db import db
@@ -11,7 +11,8 @@ app.secret_key = os.environ.get('SECRET_KEY', 'dev-key-virtual-life-2026')
 app.config['SQLALCHEMY_DATABASE_URI'] = "sqlite:///database.db"
 db.init_app(app)
 
-from models import Usuario
+from models import Usuario, Humor, Vibe, Favorito
+
 lm = LoginManager(app)
 lm.login_view = 'login'
 
@@ -22,6 +23,7 @@ with app.app_context():
 def user_loader(id):
     return db.session.get(Usuario, int(id))
 
+
 @app.route('/')
 def inicial():
     return render_template('inicio.html')
@@ -30,6 +32,7 @@ def inicial():
 @login_required
 def home():
     return render_template('home.html')
+
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -94,30 +97,12 @@ def registrar():
     login_user(novo_usuario)
     return redirect(url_for("profile"))
 
-#alteração para o dashboard do usuário -15/06
-@app.route("/profile")
+@app.route('/logout')
 @login_required
-def profile():
-    return render_template("profile.html",usuario=current_user)
+def logout():
+    logout_user()
+    return redirect(url_for('inicial'))
 
-# rota para atualizar o perfil do usuário, incluindo upload de avatar -15/06
-UPLOAD_FOLDER = os.path.join('static', 'uploads')
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-
-@app.route('/update-profile', methods=['POST'])
-@login_required
-def update_profile():
-    current_user.nome = request.form.get("nome", current_user.nome).strip()
-    current_user.bio  = request.form.get("bio", "").strip()
-
-    arquivo = request.files.get("avatar")
-    if arquivo and arquivo.filename:
-        nome_arquivo = secure_filename(arquivo.filename)
-        arquivo.save(os.path.join(UPLOAD_FOLDER, nome_arquivo))
-        current_user.avatar = nome_arquivo
-
-    db.session.commit()
-    return redirect(url_for('profile'))
 
 @app.route('/recuperar', methods=['GET', 'POST'])
 def recuperar():
@@ -207,11 +192,287 @@ def alterar_senha():
     db.session.commit()
     return redirect(url_for('profile'))
 
-@app.route('/logout')
+
+@app.route("/profile")
 @login_required
-def logout():
-    logout_user()
-    return redirect(url_for('inicial'))
+def profile():
+    return render_template("profile.html", usuario=current_user)
+
+UPLOAD_FOLDER = os.path.join('static', 'uploads')
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
+@app.route('/update-profile', methods=['POST'])
+@login_required
+def update_profile():
+    current_user.nome = request.form.get("nome", current_user.nome).strip()
+    current_user.bio  = request.form.get("bio", "").strip()
+
+    arquivo = request.files.get("avatar")
+    if arquivo and arquivo.filename:
+        nome_arquivo = secure_filename(arquivo.filename)
+        arquivo.save(os.path.join(UPLOAD_FOLDER, nome_arquivo))
+        current_user.avatar = nome_arquivo
+
+    db.session.commit()
+    return redirect(url_for('profile'))
+
+
+TIPOS_HUMOR = ['feliz', 'triste', 'ansioso', 'calmo', 'animado',
+               'cansado', 'frustrado', 'grato']
+
+@app.route('/humor', methods=['GET', 'POST'])
+@login_required
+def humor():
+    if request.method == 'GET':
+        historico = (db.session.query(Humor)
+                     .filter_by(usuario_id=current_user.id)
+                     .order_by(Humor.data.desc())
+                     .limit(10)
+                     .all())
+        return render_template('humor.html', tipos=TIPOS_HUMOR, historico=historico)
+
+    tipo = request.form.get("tipo", "").strip().lower()
+    nota = request.form.get("nota", "").strip()
+
+    if tipo not in TIPOS_HUMOR:
+        historico = (db.session.query(Humor)
+                     .filter_by(usuario_id=current_user.id)
+                     .order_by(Humor.data.desc())
+                     .limit(10)
+                     .all())
+        return render_template('humor.html', tipos=TIPOS_HUMOR, historico=historico,
+                               erro='Selecione um tipo de humor válido.')
+
+    db.session.add(Humor(
+        usuario_id=current_user.id,
+        tipo=tipo,
+        nota=nota if nota else None
+    ))
+    current_user.total_humores = (current_user.total_humores or 0) + 1
+    db.session.commit()
+    return redirect(url_for('humor'))
+
+
+@app.route('/humor/historico')
+@login_required
+def humor_historico():
+    registros = (db.session.query(Humor)
+                 .filter_by(usuario_id=current_user.id)
+                 .order_by(Humor.data.desc())
+                 .all())
+    return render_template('humor_historico.html', registros=registros)
+
+
+@app.route('/humor/<int:humor_id>', methods=['DELETE'])
+@login_required
+def deletar_humor(humor_id):
+    registro = db.session.get(Humor, humor_id)
+    if not registro or registro.usuario_id != current_user.id:
+        return jsonify({'erro': 'Registro não encontrado.'}), 404
+    db.session.delete(registro)
+    current_user.total_humores = max(0, (current_user.total_humores or 1) - 1)
+    db.session.commit()
+    return jsonify({'mensagem': 'Humor removido com sucesso.'}), 200
+
+
+
+CATEGORIAS_VIBE = ['música', 'leitura', 'série', 'jogo', 'cinema',
+                   'arte', 'esporte', 'culinária', 'tecnologia', 'outro']
+
+@app.route('/vibe', methods=['GET', 'POST'])
+@login_required
+def vibe():
+    if request.method == 'GET':
+        historico = (db.session.query(Vibe)
+                     .filter_by(usuario_id=current_user.id)
+                     .order_by(Vibe.data.desc())
+                     .limit(10)
+                     .all())
+        return render_template('vibe.html', categorias=CATEGORIAS_VIBE, historico=historico)
+
+    descricao = request.form.get("descricao", "").strip()
+    categoria = request.form.get("categoria", "outro").strip().lower()
+
+    historico = (db.session.query(Vibe)
+                 .filter_by(usuario_id=current_user.id)
+                 .order_by(Vibe.data.desc())
+                 .limit(10)
+                 .all())
+
+    if not descricao:
+        return render_template('vibe.html', categorias=CATEGORIAS_VIBE, historico=historico,
+                               erro='A descrição da vibe é obrigatória.')
+
+    if len(descricao) > 200:
+        return render_template('vibe.html', categorias=CATEGORIAS_VIBE, historico=historico,
+                               erro='A descrição deve ter no máximo 200 caracteres.')
+
+    if categoria not in CATEGORIAS_VIBE:
+        categoria = 'outro'
+
+    db.session.add(Vibe(
+        usuario_id=current_user.id,
+        descricao=descricao,
+        categoria=categoria
+    ))
+    current_user.total_interesses = (current_user.total_interesses or 0) + 1
+    db.session.commit()
+    return redirect(url_for('vibe'))
+
+
+@app.route('/vibe/historico')
+@login_required
+def vibe_historico():
+    registros = (db.session.query(Vibe)
+                 .filter_by(usuario_id=current_user.id)
+                 .order_by(Vibe.data.desc())
+                 .all())
+    return render_template('vibe_historico.html', registros=registros)
+
+
+@app.route('/vibe/<int:vibe_id>', methods=['DELETE'])
+@login_required
+def deletar_vibe(vibe_id):
+    registro = db.session.get(Vibe, vibe_id)
+    if not registro or registro.usuario_id != current_user.id:
+        return jsonify({'erro': 'Registro não encontrado.'}), 404
+    db.session.delete(registro)
+    current_user.total_interesses = max(0, (current_user.total_interesses or 1) - 1)
+    db.session.commit()
+    return jsonify({'mensagem': 'Vibe removida com sucesso.'}), 200
+
+
+
+CATEGORIAS_FAVORITO = ['música', 'série', 'filme', 'livro', 'jogo',
+                       'lugar', 'pessoa', 'outro']
+
+@app.route('/favoritos', methods=['GET', 'POST'])
+@login_required
+def favoritos():
+    """Lista todos os favoritos e permite adicionar um novo."""
+    # Filtro opcional por categoria via query string: /favoritos?categoria=série
+    categoria_filtro = request.args.get('categoria', '').strip().lower()
+
+    if request.method == 'POST':
+        titulo    = request.form.get("titulo", "").strip()
+        categoria = request.form.get("categoria", "outro").strip().lower()
+        descricao = request.form.get("descricao", "").strip()
+        url       = request.form.get("url", "").strip()
+
+        erros = {}
+
+        if not titulo:
+            erros['erro_titulo'] = 'O título é obrigatório.'
+        elif len(titulo) > 150:
+            erros['erro_titulo'] = 'O título deve ter no máximo 150 caracteres.'
+
+        if categoria not in CATEGORIAS_FAVORITO:
+            categoria = 'outro'
+
+        if url and not re.match(r'^https?://', url):
+            erros['erro_url'] = 'A URL deve começar com http:// ou https://'
+
+        if erros:
+            lista = _buscar_favoritos(current_user.id, categoria_filtro)
+            return render_template('favoritos.html',
+                                   favoritos=lista,
+                                   categorias=CATEGORIAS_FAVORITO,
+                                   categoria_filtro=categoria_filtro,
+                                   **erros)
+
+        db.session.add(Favorito(
+            usuario_id=current_user.id,
+            titulo=titulo,
+            categoria=categoria,
+            descricao=descricao if descricao else None,
+            url=url if url else None
+        ))
+        db.session.commit()
+        return redirect(url_for('favoritos'))
+
+    lista = _buscar_favoritos(current_user.id, categoria_filtro)
+    return render_template('favoritos.html',
+                           favoritos=lista,
+                           categorias=CATEGORIAS_FAVORITO,
+                           categoria_filtro=categoria_filtro)
+
+
+def _buscar_favoritos(usuario_id, categoria_filtro=''):
+    """Helper: retorna favoritos do usuário, com filtro opcional por categoria."""
+    query = (db.session.query(Favorito)
+             .filter_by(usuario_id=usuario_id)
+             .order_by(Favorito.data.desc()))
+    if categoria_filtro and categoria_filtro in CATEGORIAS_FAVORITO:
+        query = query.filter_by(categoria=categoria_filtro)
+    return query.all()
+
+
+@app.route('/favoritos/<int:fav_id>', methods=['GET', 'POST'])
+@login_required
+def editar_favorito(fav_id):
+    """Exibe e processa a edição de um favorito existente."""
+    fav = db.session.get(Favorito, fav_id)
+    if not fav or fav.usuario_id != current_user.id:
+        return redirect(url_for('favoritos'))
+
+    if request.method == 'GET':
+        return render_template('favorito_editar.html',
+                               fav=fav,
+                               categorias=CATEGORIAS_FAVORITO)
+
+    titulo    = request.form.get("titulo", "").strip()
+    categoria = request.form.get("categoria", fav.categoria).strip().lower()
+    descricao = request.form.get("descricao", "").strip()
+    url       = request.form.get("url", "").strip()
+    erros     = {}
+
+    if not titulo:
+        erros['erro_titulo'] = 'O título é obrigatório.'
+    elif len(titulo) > 150:
+        erros['erro_titulo'] = 'O título deve ter no máximo 150 caracteres.'
+
+    if categoria not in CATEGORIAS_FAVORITO:
+        categoria = fav.categoria
+
+    if url and not re.match(r'^https?://', url):
+        erros['erro_url'] = 'A URL deve começar com http:// ou https://'
+
+    if erros:
+        return render_template('favorito_editar.html',
+                               fav=fav,
+                               categorias=CATEGORIAS_FAVORITO,
+                               **erros)
+
+    fav.titulo    = titulo
+    fav.categoria = categoria
+    fav.descricao = descricao if descricao else None
+    fav.url       = url if url else None
+    db.session.commit()
+    return redirect(url_for('favoritos'))
+
+
+@app.route('/favoritos/<int:fav_id>/deletar', methods=['POST'])
+@login_required
+def deletar_favorito(fav_id):
+    """Remove um favorito via form POST (compatível com HTML puro)."""
+    fav = db.session.get(Favorito, fav_id)
+    if fav and fav.usuario_id == current_user.id:
+        db.session.delete(fav)
+        db.session.commit()
+    return redirect(url_for('favoritos'))
+
+
+@app.route('/favoritos/<int:fav_id>', methods=['DELETE'])
+@login_required
+def deletar_favorito_ajax(fav_id):
+    """Remove um favorito via DELETE (para uso com fetch/AJAX)."""
+    fav = db.session.get(Favorito, fav_id)
+    if not fav or fav.usuario_id != current_user.id:
+        return jsonify({'erro': 'Favorito não encontrado.'}), 404
+    db.session.delete(fav)
+    db.session.commit()
+    return jsonify({'mensagem': 'Favorito removido com sucesso.'}), 200
+
 
 if __name__ == '__main__':
     app.run(debug=True)
