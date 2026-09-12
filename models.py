@@ -23,6 +23,8 @@ class Usuario(UserMixin, db.Model):
                                  cascade='all, delete-orphan')
     favoritos  = db.relationship('Favorito', backref='usuario', lazy=True,
                                  cascade='all, delete-orphan')
+    momentos   = db.relationship('Momento',  backref='usuario', lazy=True,
+                                 cascade='all, delete-orphan')
 
     def percentual_perfil(self):
         campos = [self.nome, self.email, self.bio, self.avatar]
@@ -59,3 +61,30 @@ class Favorito(db.Model):
     descricao  = db.Column(db.String(400), nullable=True)
     url        = db.Column(db.String(500), nullable=True)
     data       = db.Column(db.DateTime, default=datetime.utcnow)
+
+
+class Momento(db.Model):
+  
+    __tablename__ = "momentos"
+
+    id                 = db.Column(db.Integer, primary_key=True)
+    
+    usuario_id         = db.Column(db.Integer, db.ForeignKey('usuarios.id'), nullable=False)
+
+    ouvindo            = db.Column(db.String(150), nullable=False)
+
+    lendo              = db.Column(db.String(150), nullable=False)
+
+    frase_inicio       = db.Column(db.String(100), nullable=False)
+    
+    frase_complemento  = db.Column(db.String(120), nullable=True)
+
+
+    atmosfera          = db.Column(db.String(50), nullable=False)
+
+    data               = db.Column(db.DateTime, default=datetime.utcnow)
+
+    def pensamento_completo(self):
+        base = self.frase_inicio or ""
+        complemento = self.frase_complemento or ""
+        return f"{base} {complemento}".strip()
