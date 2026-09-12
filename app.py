@@ -5,13 +5,14 @@ from db import db
 import os
 from werkzeug.utils import secure_filename
 import re
+from datetime import datetime, timedelta
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'dev-key-virtual-life-2026')
 app.config['SQLALCHEMY_DATABASE_URI'] = "sqlite:///database.db"
 db.init_app(app)
 
-from models import Usuario, Humor, Vibe, Favorito
+from models import Usuario, Humor, Vibe, Favorito, Momento
 
 lm = LoginManager(app)
 lm.login_view = 'login'
@@ -196,7 +197,8 @@ def alterar_senha():
 @app.route("/profile")
 @login_required
 def profile():
-    return render_template("profile.html", usuario=current_user)
+    return render_template("profile.html", usuario=current_user,
+                           **_contexto_momento(current_user.id))
 
 UPLOAD_FOLDER = os.path.join('static', 'uploads')
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
@@ -472,6 +474,186 @@ def deletar_favorito_ajax(fav_id):
     db.session.delete(fav)
     db.session.commit()
     return jsonify({'mensagem': 'Favorito removido com sucesso.'}), 200
+
+
+
+FRASES_MOMENTO = [
+    "Minha mente está em...",
+    "Ultimamente tenho pensado em...",
+    "Meu coração está voltado para...",
+    "Estou tentando entender...",
+    "Estou aprendendo sobre...",
+    "Não consigo parar de pensar em...",
+    "Neste momento, quero...",
+    "Tenho vontade de...",
+]
+ATMOSFERAS_MOMENTO = [
+    "Noite tranquila",
+    "Dia aconchegante",
+    "Dia introspectivo",
+    "Momento especial",
+    "Em paz",
+    "Cheio de energia",
+]
+
+NAO_LENDO = "Não estou lendo nada no momento"
+
+
+def _humor_atual(usuario_id):
+    """Retorna o registro de Humor mais recente do usuário (ou None)."""
+    return (db.session.query(Humor)
+            .filter_by(usuario_id=usuario_id)
+            .order_by(Humor.data.desc())
+            .first())
+
+
+def _momento_atual(usuario_id):
+    """Retorna o Momento mais recente do usuário (ou None se ainda não
+    existir nenhum registro — HU13/CA01)."""
+    return (db.session.query(Momento)
+            .filter_by(usuario_id=usuario_id)
+            .order_by(Momento.data.desc())
+            .first())
+
+
+def _favoritos_por_categoria(usuario_id, categoria):
+    """Interesses (Favoritos) do usuário numa categoria específica, usados
+    para alimentar os seletores de artista/livro do momento (HU04/HU05)."""
+    return (db.session.query(Favorito)
+            .filter_by(usuario_id=usuario_id, categoria=categoria)
+            .order_by(Favorito.titulo.asc())
+            .all())
+
+
+def _tempo_relativo(data):
+    """Formata a data de um momento como texto dinâmico:
+    'Atualizado agora', 'Atualizado há 8 minutos', 'Atualizado há 2 horas',
+    'Atualizado ontem, às 21:34' ou 'Atualizado em 23/08, às 14:32'."""
+    if not data:
+        return None
+
+    agora = datetime.utcnow()
+    diferenca = agora - data
+    segundos = diferenca.total_seconds()
+
+    if segundos < 60:
+        return "Atualizado agora"
+    if segundos < 3600:
+        minutos = int(segundos // 60)
+        return f"Atualizado há {minutos} minuto{'s' if minutos != 1 else ''}"
+    if segundos < 86400 and data.date() == agora.date():
+        horas = int(segundos // 3600)
+        return f"Atualizado há {horas} hora{'s' if horas != 1 else ''}"
+    if data.date() == (agora - timedelta(days=1)).date():
+        return f"Atualizado ontem, às {data.strftime('%H:%M')}"
+    return f"Atualizado em {data.strftime('%d/%m')}, às {data.strftime('%H:%M')}"
+
+
+def _contexto_momento(usuario_id):
+    """Monta todo o contexto do 'Seu Momento' necessário para renderizar o
+    card no perfil: o momento mais recente, o humor atual (campo
+    "Sentindo", vindo direto do sistema de Humor — HU03), os interesses
+    cadastrados para os seletores de artista/livro, e as opções fixas de
+    frase/atmosfera para o formulário de criação/edição."""
+    momento_atual = _momento_atual(usuario_id)
+    humor_atual = _humor_atual(usuario_id)
+
+    return {
+        "momento_atual": momento_atual,
+        "momento_atualizado_em": _tempo_relativo(momento_atual.data) if momento_atual else None,
+        "sentindo": humor_atual.tipo if humor_atual else None,
+        "artistas_cadastrados": _favoritos_por_categoria(usuario_id, "música"),
+        "livros_cadastrados": _favoritos_por_categoria(usuario_id, "livro"),
+        "frases_momento": FRASES_MOMENTO,
+        "atmosferas_momento": ATMOSFERAS_MOMENTO,
+        "nao_lendo": NAO_LENDO,
+    }
+
+
+@app.route('/momento', methods=['POST'])
+@login_required
+def salvar_momento():
+    """Cadastra um novo momento para o usuário logado (CA02/HU02).
+
+    Cada chamada cria uma NOVA linha na tabela de momentos (nunca
+    atualiza uma existente), garantindo que o registro anterior seja
+    preservado no histórico (CA04/HU02) e que o perfil sempre exiba o
+    mais recente como o momento atual (CA03/HU02).
+    """
+    ouvindo           = request.form.get("ouvindo", "").strip()
+    lendo             = request.form.get("lendo", "").strip()
+    frase_inicio      = request.form.get("frase_inicio", "").strip()
+    frase_complemento = request.form.get("frase_complemento", "").strip()
+    atmosfera         = request.form.get("atmosfera", "").strip()
+
+    erros = {}
+
+    if not ouvindo:
+        erros['erro_ouvindo'] = 'Informe o que você está ouvindo.'
+    elif len(ouvindo) > 150:
+        erros['erro_ouvindo'] = 'O nome do artista deve ter no máximo 150 caracteres.'
+
+    if not lendo:
+        lendo = NAO_LENDO
+    elif len(lendo) > 150:
+        erros['erro_lendo'] = 'O título deve ter no máximo 150 caracteres.'
+
+    if frase_inicio not in FRASES_MOMENTO:
+        erros['erro_frase'] = 'Selecione uma forma válida de iniciar sua frase.'
+
+    if len(frase_complemento) > 120:
+        erros['erro_complemento'] = 'A frase deve ter no máximo 120 caracteres.'
+
+    if atmosfera not in ATMOSFERAS_MOMENTO:
+        erros['erro_atmosfera'] = 'Selecione uma atmosfera válida.'
+
+    if erros:
+        return render_template("profile.html", usuario=current_user,
+                               **_contexto_momento(current_user.id), **erros)
+
+    db.session.add(Momento(
+        usuario_id=current_user.id,
+        ouvindo=ouvindo,
+        lendo=lendo,
+        frase_inicio=frase_inicio,
+        frase_complemento=frase_complemento if frase_complemento else None,
+        atmosfera=atmosfera
+    ))
+    db.session.commit()
+    return redirect(url_for('profile'))
+
+
+@app.route('/momento/historico')
+@login_required
+def momento_historico():
+    """Histórico completo dos momentos do usuário, com filtros de
+    período ('todos', 'este_mes', 'ultimos_meses'), usado pela página de
+    recapitulação ('Recapitule aqui os seus momentos')."""
+    filtro = request.args.get('filtro', 'todos').strip().lower()
+
+    query = db.session.query(Momento).filter_by(usuario_id=current_user.id)
+
+    agora = datetime.utcnow()
+    if filtro == 'este_mes':
+        inicio_do_mes = agora.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        query = query.filter(Momento.data >= inicio_do_mes)
+    elif filtro == 'ultimos_meses':
+        limite = agora - timedelta(days=90)
+        query = query.filter(Momento.data >= limite)
+    else:
+        filtro = 'todos'
+
+    registros = query.order_by(Momento.data.desc()).all()
+
+    for registro in registros:
+        humor_na_epoca = (db.session.query(Humor)
+                          .filter(Humor.usuario_id == current_user.id,
+                                  Humor.data <= registro.data)
+                          .order_by(Humor.data.desc())
+                          .first())
+        registro.sentindo = humor_na_epoca.tipo if humor_na_epoca else None
+
+    return render_template('momento_historico.html', registros=registros, filtro=filtro)
 
 
 if __name__ == '__main__':
