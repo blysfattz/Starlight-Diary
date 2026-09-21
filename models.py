@@ -8,8 +8,6 @@ class Usuario(UserMixin, db.Model):
     id               = db.Column(db.Integer, primary_key=True)
     nome             = db.Column(db.String(30), unique=True)
     senha            = db.Column(db.String(256))
-    pergunta_secreta = db.Column(db.String(200))
-    resposta_secreta = db.Column(db.String(200))
     email            = db.Column(db.String(120), nullable=True)
     bio              = db.Column(db.String(300), nullable=True)
     avatar           = db.Column(db.String(200), nullable=True)
@@ -64,11 +62,11 @@ class Favorito(db.Model):
 
 
 class Momento(db.Model):
-  
+
     __tablename__ = "momentos"
 
     id                 = db.Column(db.Integer, primary_key=True)
-    
+
     usuario_id         = db.Column(db.Integer, db.ForeignKey('usuarios.id'), nullable=False)
 
     ouvindo            = db.Column(db.String(150), nullable=False)
@@ -76,13 +74,19 @@ class Momento(db.Model):
     lendo              = db.Column(db.String(150), nullable=False)
 
     frase_inicio       = db.Column(db.String(100), nullable=False)
-    
-    frase_complemento  = db.Column(db.String(120), nullable=True)
+
+    frase_complemento  = db.Column(db.String(160), nullable=True)
 
 
     atmosfera          = db.Column(db.String(50), nullable=False)
 
-    data               = db.Column(db.DateTime, default=datetime.utcnow)
+    data = db.Column(db.DateTime, default=datetime.utcnow)
+
+    atualizado_em = db.Column(
+        db.DateTime,
+        default=datetime.utcnow,
+        onupdate=datetime.utcnow
+    )
 
     def pensamento_completo(self):
         base = self.frase_inicio or ""
