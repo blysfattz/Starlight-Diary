@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StarLight Diary</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='profile.css') }}">
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+<div class="background-blur blur1"></div>
+<div class="background-blur blur2"></div>
+<div class="stars"></div>
+
+<div class="dashboard">
+
+    <!-- SIDEBAR (agora compartilhado por Perfil, Humor e Favoritos) -->
+    <aside class="sidebar">
+
+        <div class="logo">
+            StarLight Diary
+        </div>
+
+        <nav>
+
+            <a href="/profile" class="{{ 'active' if request.path == '/profile' else '' }}">
+                <svg class="nav-icon" viewBox="0 0 24 24"><path d="M12 12a4.5 4.5 0 1 0 0-9 4.5 4.5 0 0 0 0 9Z"/><path d="M4 20.5c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg>
+                Perfil
+            </a>
+
+            <a href="/humor" class="{{ 'active' if request.path == '/humor' else '' }}">
+                <svg class="nav-icon" viewBox="0 0 24 24"><path d="M12 20.5s-7-4.35-9.5-8.6C.7 8.4 2.3 5 5.8 5c2 0 3.4 1.15 4.2 2.35C10.8 6.15 12.2 5 14.2 5c3.5 0 5.1 3.4 3.3 6.9C19 16.15 12 20.5 12 20.5Z"/></svg>
+                Humor
+            </a>
+
+            <a href="/favoritos" class="{{ 'active' if request.path == '/favoritos' else '' }}">
+                <svg class="nav-icon" viewBox="0 0 24 24"><path d="M12 2.5l2.9 6 6.6.7-4.9 4.5 1.3 6.5L12 16.9l-5.9 3.3 1.3-6.5-4.9-4.5 6.6-.7L12 2.5Z"/></svg>
+                Favoritos
+            </a>
+
+            <a href="/profile?edit=1">
+                <svg class="nav-icon" viewBox="0 0 24 24"><path d="M4 17.25V20h2.75L17.8 8.94l-2.75-2.75L4 17.25Z"/><path d="M18.7 5.04l-1.7 1.7 2.75 2.75 1.7-1.7a1.94 1.94 0 0 0-2.75-2.75Z"/></svg>
+                Editar Perfil
+            </a>
+
+            <a href="/alterar_senha">
+                <svg class="nav-icon" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+                Alterar Senha
+            </a>
+
+            <a href="/logout" class="logout-link">
+                <svg class="nav-icon" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>
+                Sair
+            </a>
+
+        </nav>
+
+    </aside>
+
+    <!-- CONTEÚDO ESPECÍFICO DE CADA PÁGINA -->
+    <main class="content">
+        {% block content %}
+        {% endblock %}
+    </main>
+
+</div>
+
+<script src="{{ url_for('static', filename='js/effects.js') }}"></script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>
