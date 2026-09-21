@@ -1,12 +1,32 @@
-{% extends 'base.html' %}
-{% block content %}
-<div class="form-wrapper">
-    <div class="glass-form">
-        <h1>Olá, {{ current_user.nome }} ✦</h1>
-        <p>Bem-vindo ao seu mundo virtual</p>
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StarLight Diary</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
 
-        <a href="/alterar_senha"><button type="button">Alterar senha</button></a>
-        <a href="/logout"><button type="button">Sair</button></a>
+</head>
+<body>
+
+<div class="background-blur blur1"></div>
+<div class="background-blur blur2"></div>
+<div class="stars"></div>
+
+<nav class="navbar">
+    <div class="logo">✦ StarLight Diary</div>
+    <div class="nav-links">
+        <a href="/">Home</a>
+        <a href="/login">Login</a>
+        <a href="/registrar">Cadastre-se</a>
     </div>
-</div>
+</nav>
+
+{% block content %}
 {% endblock %}
+
+<script src="{{ url_for('static', filename='js/effects.js') }}"></script>
+{% block scripts %}
+{% endblock %}
+</body>
+</html>
