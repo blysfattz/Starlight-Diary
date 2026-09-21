@@ -1,0 +1,398 @@
+{% extends "menu.html" %}
+
+{% block content %}
+
+<section class="criar-momento-page">
+
+    <div class="criar-momento-header">
+
+        <span>
+            ✦ SEU AGORA
+        </span>
+
+        <h2>
+            Criar meu momento
+        </h2>
+
+        <p>
+            Registre um pouco do que faz parte do seu momento atual.
+        </p>
+
+    </div>
+
+
+    <div class="criar-momento-form">
+
+        <form
+            method="POST"
+            action="{{ url_for('momentos') }}"
+        >
+
+            <!-- OUVINDO -->
+
+            <div class="criar-momento-campo">
+
+                <label for="ouvindo">
+                    O que você está ouvindo?
+                </label>
+
+                <input
+                    type="text"
+                    id="ouvindo"
+                    name="ouvindo"
+                    maxlength="150"
+                    placeholder="Artista ou música"
+                    required
+                >
+
+                {% if erro_ouvindo %}
+                    <small>{{ erro_ouvindo }}</small>
+                {% endif %}
+
+            </div>
+
+
+            <!-- LENDO -->
+
+            <div class="criar-momento-campo">
+
+                <label for="lendo">
+                    O que você está lendo?
+                </label>
+
+                <input
+                    type="text"
+                    id="lendo"
+                    name="lendo"
+                    maxlength="150"
+                    placeholder="Livro ou leitura atual"
+                >
+
+                {% if erro_lendo %}
+                    <small>{{ erro_lendo }}</small>
+                {% endif %}
+
+            </div>
+
+
+            <!-- FRASE -->
+
+            <div class="criar-momento-campo">
+
+                <label for="frase_inicio">
+                    Como começar seu pensamento?
+                </label>
+
+                <select
+                    id="frase_inicio"
+                    name="frase_inicio"
+                    required
+                >
+
+                    <option value="">
+                        Escolha uma frase
+                    </option>
+
+                    {% for frase in frases_momento %}
+
+                        <option value="{{ frase }}">
+                            {{ frase }}
+                        </option>
+
+                    {% endfor %}
+
+                </select>
+
+                {% if erro_frase %}
+                    <small>{{ erro_frase }}</small>
+                {% endif %}
+
+            </div>
+
+
+            <!-- PENSAMENTO -->
+
+            <div class="criar-momento-campo">
+
+                <label for="frase_complemento">
+                    Complete a frase
+                </label>
+
+                <textarea
+                    id="frase_complemento"
+                    name="frase_complemento"
+                    maxlength="120"
+                    rows="5"
+                    placeholder="Escreva um pouco sobre o que está passando pela sua mente..."
+                ></textarea>
+
+                {% if erro_complemento %}
+                    <small>{{ erro_complemento }}</small>
+                {% endif %}
+
+            </div>
+
+
+            <!-- ATMOSFERA -->
+
+            <div class="criar-momento-campo">
+
+                <label for="atmosfera">
+                    Qual é o clima do seu momento?
+                </label>
+
+                <select
+                    id="atmosfera"
+                    name="atmosfera"
+                    required
+                >
+
+                    <option value="">
+                        Escolha uma atmosfera
+                    </option>
+
+                    {% for atmosfera in atmosferas_momento %}
+
+                        <option value="{{ atmosfera }}">
+                            {{ atmosfera }}
+                        </option>
+
+                    {% endfor %}
+
+                </select>
+
+                {% if erro_atmosfera %}
+                    <small>{{ erro_atmosfera }}</small>
+                {% endif %}
+
+            </div>
+
+
+            <!-- BOTÕES -->
+
+            <div class="criar-momento-acoes">
+
+                <a
+                    href="{{ url_for('profile') }}"
+                    class="criar-momento-cancelar"
+                >
+                    Cancelar
+                </a>
+
+                <button
+                    type="submit"
+                    class="criar-momento-salvar"
+                >
+                    ✦ Salvar momento
+                </button>
+
+            </div>
+
+        </form>
+
+    </div>
+
+</section>
+
+
+<style>
+
+.criar-momento-page {
+    width: 100%;
+    max-width: 850px;
+    margin: 50px auto;
+    padding: 0 30px 60px;
+    box-sizing: border-box;
+}
+
+.criar-momento-header {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.criar-momento-header span {
+    display: block;
+    color: #c9a7ff;
+    font-size: 0.8rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    margin-bottom: 8px;
+}
+
+.criar-momento-header h2 {
+    color: white;
+    font-size: 2rem;
+    margin: 0 0 10px;
+}
+
+.criar-momento-header p {
+    color: rgba(255,255,255,0.65);
+    margin: 0;
+}
+
+
+.criar-momento-form {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 35px;
+
+    border: 1px solid rgba(190,125,255,0.25);
+    border-radius: 25px;
+
+    background: rgba(24,13,48,0.75);
+
+    box-shadow:
+        0 20px 60px rgba(0,0,0,0.25),
+        inset 0 1px 0 rgba(255,255,255,0.05);
+
+    backdrop-filter: blur(18px);
+}
+
+
+.criar-momento-campo {
+    margin-bottom: 22px;
+}
+
+.criar-momento-campo label {
+    display: block;
+    margin-bottom: 8px;
+
+    color: rgba(255,255,255,0.85);
+
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+
+.criar-momento-campo input,
+.criar-momento-campo select,
+.criar-momento-campo textarea {
+    display: block;
+
+    width: 100%;
+    box-sizing: border-box;
+
+    padding: 13px 15px;
+
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 12px;
+
+    background: rgba(255,255,255,0.06);
+
+    color: white;
+
+    font-size: 0.95rem;
+
+    outline: none;
+}
+
+
+.criar-momento-campo input:focus,
+.criar-momento-campo select:focus,
+.criar-momento-campo textarea:focus {
+    border-color: #c17cff;
+    box-shadow: 0 0 15px rgba(193,124,255,0.15);
+}
+
+
+.criar-momento-campo textarea {
+    resize: vertical;
+    min-height: 120px;
+}
+
+
+.criar-momento-campo select option {
+    background: #24113d;
+    color: white;
+}
+
+
+.criar-momento-campo small {
+    display: block;
+    margin-top: 6px;
+    color: #ff8fa3;
+}
+
+
+.criar-momento-acoes {
+    display: flex;
+    justify-content: flex-end;
+    gap: 15px;
+
+    margin-top: 30px;
+}
+
+
+.criar-momento-cancelar,
+.criar-momento-salvar {
+    padding: 13px 22px;
+
+    border-radius: 12px;
+
+    font-size: 0.9rem;
+    font-weight: 600;
+
+    text-decoration: none;
+
+    cursor: pointer;
+}
+
+
+.criar-momento-cancelar {
+    color: rgba(255,255,255,0.75);
+    background: rgba(255,255,255,0.07);
+}
+
+
+.criar-momento-salvar {
+    border: none;
+
+    color: white;
+
+    background: linear-gradient(
+        to right,
+        #ff67d4,
+        #9457ff
+    );
+
+    box-shadow: 0 0 20px rgba(190,91,255,0.2);
+}
+
+
+.criar-momento-cancelar:hover {
+    background: rgba(255,255,255,0.12);
+}
+
+
+.criar-momento-salvar:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 0 30px rgba(190,91,255,0.35);
+}
+
+
+@media (max-width: 700px) {
+
+    .criar-momento-page {
+        padding: 0 18px 40px;
+    }
+
+    .criar-momento-form {
+        padding: 22px;
+    }
+
+    .criar-momento-acoes {
+        flex-direction: column;
+    }
+
+    .criar-momento-cancelar,
+    .criar-momento-salvar {
+        width: 100%;
+        box-sizing: border-box;
+        text-align: center;
+    }
+
+}
+
+</style>
+
+{% endblock %}

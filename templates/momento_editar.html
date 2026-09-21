@@ -1,0 +1,334 @@
+{% extends "menu.html" %}
+
+{% block content %}
+
+<section class="momento-section">
+
+    <div class="momento-heading">
+
+        <span class="momento-eyebrow">
+            ✦ Seu agora
+        </span>
+
+        <h2>
+            Editar meu momento
+        </h2>
+
+        <p>
+            Atualize as informações do seu momento atual.
+        </p>
+
+    </div>
+
+
+    <article class="momento-card is-visible">
+
+        <div class="momento-card-glow"></div>
+
+
+        <div class="momento-card-top">
+
+            <div class="momento-status">
+
+                <span class="momento-status-dot"></span>
+
+                <span>
+                    Editando seu momento atual
+                </span>
+
+            </div>
+
+        </div>
+
+
+        <form
+            method="POST"
+            action="{{ url_for('editar_momento') }}"
+        >
+
+            <!-- SENTINDO -->
+
+            <div class="momento-integrated-info">
+
+                <span class="momento-integrated-icon">
+                    ♡
+                </span>
+
+                <div>
+
+                    <span class="momento-integrated-label">
+                        Sentindo
+                    </span>
+
+                    <p>
+                        Seu humor atual é atualizado automaticamente.
+                    </p>
+
+                    <strong>
+                        {{ sentindo or "Nenhum humor registrado" }}
+                    </strong>
+
+                </div>
+
+            </div>
+
+
+            <!-- OUVINDO -->
+
+            <div class="momento-form-group">
+
+                <label for="ouvindo">
+                    O que você está ouvindo?
+                </label>
+
+                <input
+                    type="text"
+                    id="ouvindo"
+                    name="ouvindo"
+                    maxlength="150"
+                    value="{{ momento.ouvindo or '' }}"
+                    placeholder="Artista ou música"
+                    required
+                >
+
+                {% if erro_ouvindo %}
+                    <div class="momento-form-message">
+                        {{ erro_ouvindo }}
+                    </div>
+                {% endif %}
+
+            </div>
+
+
+            <!-- LENDO -->
+
+            <div class="momento-form-group">
+
+                <label for="lendo">
+                    O que você está lendo?
+                </label>
+
+                <input
+                    type="text"
+                    id="lendo"
+                    name="lendo"
+                    maxlength="150"
+                    value="{{ momento.lendo or '' }}"
+                    placeholder="Livro ou leitura atual"
+                >
+
+                {% if erro_lendo %}
+                    <div class="momento-form-message">
+                        {{ erro_lendo }}
+                    </div>
+                {% endif %}
+
+            </div>
+
+
+            <!-- FRASE -->
+
+            <div class="momento-form-group">
+
+                <label for="frase_inicio">
+                    Como começar seu pensamento?
+                </label>
+
+                <select
+                    id="frase_inicio"
+                    name="frase_inicio"
+                    required
+                >
+
+                    <option value="">
+                        Escolha uma frase
+                    </option>
+
+                    {% for frase in frases_momento %}
+
+                        <option
+                            value="{{ frase }}"
+                            {% if momento.frase_inicio == frase %}
+                                selected
+                            {% endif %}
+                        >
+                            {{ frase }}
+                        </option>
+
+                    {% endfor %}
+
+                </select>
+
+                {% if erro_frase %}
+                    <div class="momento-form-message">
+                        {{ erro_frase }}
+                    </div>
+                {% endif %}
+
+            </div>
+
+
+            <!-- COMPLEMENTO -->
+
+            <div class="momento-form-group">
+
+                <div class="momento-label-row">
+
+                    <label for="frase_complemento">
+                        Complete a frase
+                    </label>
+
+                    <span id="pensamento-contador">
+                        0/120
+                    </span>
+
+                </div>
+
+                <textarea
+                    id="frase_complemento"
+                    name="frase_complemento"
+                    maxlength="120"
+                    rows="5"
+                    placeholder="Escreva um pouco sobre o que está passando pela sua mente..."
+                >{{ momento.frase_complemento or '' }}</textarea>
+
+                {% if erro_complemento %}
+                    <div class="momento-form-message">
+                        {{ erro_complemento }}
+                    </div>
+                {% endif %}
+
+            </div>
+
+
+            <!-- ATMOSFERA -->
+
+            <div class="momento-form-group">
+
+                <label for="atmosfera">
+                    Qual é o clima do seu momento?
+                </label>
+
+                <select
+                    id="atmosfera"
+                    name="atmosfera"
+                    required
+                >
+
+                    <option value="">
+                        Escolha uma atmosfera
+                    </option>
+
+                    {% for atmosfera_opcao in atmosferas_momento %}
+
+                        <option
+                            value="{{ atmosfera_opcao }}"
+                            {% if momento.atmosfera == atmosfera_opcao %}
+                                selected
+                            {% endif %}
+                        >
+                            {{ atmosfera_opcao }}
+                        </option>
+
+                    {% endfor %}
+
+                </select>
+
+                {% if erro_atmosfera %}
+                    <div class="momento-form-message">
+                        {{ erro_atmosfera }}
+                    </div>
+                {% endif %}
+
+            </div>
+
+
+            <!-- BOTÕES -->
+
+            <div class="momento-form-actions">
+
+                <a
+                    href="{{ url_for('profile') }}"
+                    class="momento-secondary-button"
+                >
+                    Cancelar
+                </a>
+
+                <button
+                    type="submit"
+                    class="momento-save-button"
+                >
+
+                    <span class="save-button-text">
+                        ✦ Salvar alterações
+                    </span>
+
+                    <span class="save-button-loading">
+                        Salvando...
+                    </span>
+
+                </button>
+
+            </div>
+
+        </form>
+
+    </article>
+
+</section>
+
+
+<script>
+
+    const textarea = document.getElementById("frase_complemento");
+    const contador = document.getElementById("pensamento-contador");
+
+    function atualizarContador() {
+
+        if (!textarea || !contador) {
+            return;
+        }
+
+        contador.textContent =
+            textarea.value.length + "/120";
+
+    }
+
+    if (textarea) {
+
+        textarea.addEventListener(
+            "input",
+            atualizarContador
+        );
+
+        atualizarContador();
+
+    }
+
+
+    const formulario = document.querySelector(
+        '.momento-card form'
+    );
+
+    const botaoSalvar = document.querySelector(
+        '.momento-save-button'
+    );
+
+    if (formulario && botaoSalvar) {
+
+        formulario.addEventListener(
+            "submit",
+            function () {
+
+                botaoSalvar.classList.add(
+                    "is-loading"
+                );
+
+            }
+        );
+
+    }
+
+</script>
+
+{% endblock %}

@@ -1,0 +1,216 @@
+{% extends 'menu.html'%}
+{% block content %}
+<section class="mood-section">
+
+    <div class="section-header">
+
+        <div>
+
+            <h2 class="section-title">
+                Como você está se sentindo hoje?
+            </h2>
+
+            <p class="section-subtitle">
+               Selecione a emoção que melhor representa como você está se sentindo agora
+            </p>
+
+        </div>
+
+    </div>
+
+    <div class="mood-grid">
+
+        <button
+            class="mood-card"
+            data-mood="feliz">
+
+            <span class="mood-emoji">
+                😊
+            </span>
+
+            <h3>
+                Feliz
+            </h3>
+
+            <p>
+               Sentindo-se alegre e otimista
+            </p>
+
+        </button>
+
+        <button
+            class="mood-card"
+            data-mood="triste">
+
+            <span class="mood-emoji">
+                😢
+            </span>
+
+            <h3>
+                Triste
+            </h3>
+
+            <p>
+                Sentindo-se desanimado ou emocionalmente cansado.
+            </p>
+
+        </button>
+
+        <button
+            class="mood-card"
+            data-mood="calma">
+
+            <span class="mood-emoji">
+                😌
+            </span>
+
+            <h3>
+                Calma
+            </h3>
+
+            <p>
+                Tranquilo e relaxado.
+            </p>
+
+        </button>
+
+        <button
+            class="mood-card"
+            data-mood="animada">
+
+            <span class="mood-emoji">
+                🤩
+            </span>
+
+            <h3>
+                Animada
+            </h3>
+
+            <p>
+                Cheio de entusiasmo e energia.
+            </p>
+
+        </button>
+
+        <button
+            class="mood-card"
+            data-mood="criativa">
+
+            <span class="mood-emoji">
+                🎨
+            </span>
+
+            <h3>
+                Criativa
+            </h3>
+
+            <p>
+                Pronto para imaginar e criar.
+            </p>
+
+        </button>
+
+        <button
+            class="mood-card"
+            data-mood="energetico">
+
+            <span class="mood-emoji">
+                ⚡
+            </span>
+
+            <h3>
+                Energetico
+            </h3>
+
+            <p>
+               Motivado a realizar tudo.
+            </p>
+
+        </button>
+
+        <button
+            class="mood-card"
+            data-mood="cansado">
+
+            <span class="mood-emoji">
+                😴
+            </span>
+
+            <h3>
+                Cansado
+            </h3>
+
+            <p>
+                Precisando de descanso e tranquilidade.
+            </p>
+
+        </button>
+
+        <button
+            class="mood-card"
+            data-mood="pensativo">
+
+            <span class="mood-emoji">
+                🤔
+            </span>
+
+            <h3>
+                Pensativo
+            </h3>
+
+            <p>
+               Refletindo e organizando ideias.
+            </p>
+
+        </button>
+
+    </div>
+
+    <div class="selected-mood">
+
+        <div class="selected-icon">
+
+            ✨
+
+        </div>
+
+        <div>
+
+            <h3>
+
+                Estado de espírito atual
+
+            </h3>
+
+            <p id="selectedMood">
+
+                Nenhum humor selecionado ainda.
+
+            </p>
+
+        </div>
+
+    </div>
+
+    <div
+        id="moodToast"
+        class="mood-toast">
+
+        <span
+            id="toastEmoji">
+
+            ✨
+
+        </span>
+
+        <span
+            id="toastText">
+
+           Humor atualizado.
+
+        </span>
+
+    </div>
+
+</section>
+{% endblock %}
