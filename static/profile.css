@@ -1,15 +1,11 @@
-
 *{
     margin:0;
     padding:0;
     box-sizing:border-box;
     font-family:'Poppins',sans-serif;
 }
-
 body{
-
     min-height:100vh;
-
     background:
     linear-gradient(
     135deg,
@@ -17,363 +13,334 @@ body{
     #2f0f57,
     #42166f
     );
-
     color:white;
 }
-
 .dashboard{
-
     display:flex;
     min-height:100vh;
 }
-
 /* SIDEBAR */
-
 .sidebar{
-
     width:280px;
-
     padding:40px;
-
     border-right:
     1px solid rgba(255,255,255,.05);
 }
-
 .logo{
-
     font-size:2rem;
     font-weight:700;
-
     margin-bottom:60px;
-
     text-shadow:
     0 0 15px #ff79e4;
 }
-
 .sidebar nav{
-
     display:flex;
     flex-direction:column;
     gap:30px;
+    min-height:calc(100vh - 180px);
 }
-
 .sidebar a{
-
     color:#d5c7ff;
-
     text-decoration:none;
-
     font-size:1.15rem;
-
+    display:flex;
+    align-items:center;
+    gap:14px;
     transition:.3s;
 }
-
+.nav-icon{
+    width:20px;
+    height:20px;
+    flex-shrink:0;
+    fill:none;
+    stroke:currentColor;
+    stroke-width:1.8;
+    stroke-linecap:round;
+    stroke-linejoin:round;
+}
 .sidebar a:hover{
-
     color:white;
-
     transform:translateX(6px);
 }
-
 .active{
-
     color:white !important;
 }
-
+.sidebar a.logout-link{
+    margin-top:auto;
+    padding-top:25px;
+    border-top:
+    1px solid rgba(255,255,255,.08);
+    color:#ff8fb3;
+}
+.sidebar a.logout-link:hover{
+    color:#ff6dd9;
+}
 /* CONTENT */
-
 .content{
-
     flex:1;
-
     padding:35px;
 }
-
 /* HEADER */
-
 .header{
-
     display:flex;
-
     justify-content:flex-end;
-
     align-items:center;
-
     gap:25px;
 }
-
 .edit-profile-btn{
-
     border:none;
-
     cursor:pointer;
-
     color:white;
-
     border-radius:50px;
-
     padding:15px 30px;
-
     background:
     linear-gradient(
     to right,
     #ff6dd9,
     #b568ff);
 }
-
 .user-info{
-
     display:flex;
     align-items:center;
     gap:15px;
 }
-
 .mini-avatar{
-
     width:55px;
     height:55px;
-
     border-radius:50%;
-
     display:flex;
     justify-content:center;
     align-items:center;
-
     font-weight:700;
-
+    overflow:hidden;
     background:
     linear-gradient(
     #ff6dd9,
     #b568ff);
 }
-
+.mini-avatar img{
+    width:100%;
+    height:100%;
+    object-fit:cover;
+}
 /* PROFILE */
-
 .profile-card{
-
     margin-top:40px;
-
     padding:80px;
-
     text-align:center;
-
     border-radius:35px;
-
     background:
     rgba(255,255,255,.04);
-
     backdrop-filter:blur(12px);
-
     box-shadow:
     0 0 40px rgba(255,0,255,.15);
 }
-
 .avatar{
-
     width:220px;
     height:220px;
-
     margin:auto;
-
     border-radius:50%;
-
     overflow:hidden;
-
     display:flex;
     align-items:center;
     justify-content:center;
-
     font-size:5rem;
     font-weight:700;
-
     background:
     linear-gradient(
     #ff73dd,
     #c176ff);
 }
-
 .avatar img{
-
     width:100%;
     height:100%;
-
     object-fit:cover;
 }
-
 .profile-card h1{
-
     margin-top:30px;
-
     font-size:4rem;
 }
-
 .profile-card p{
-
     margin-top:15px;
-
     color:#d3c5ff;
 }
-
 /* STATS */
-
 .stats{
-
     margin-top:30px;
-
     padding:40px;
-
     border-radius:35px;
-
     background:
     rgba(255,255,255,.04);
 }
-
 .stats h2{
-
     margin-bottom:30px;
 }
-
 .stat{
-
     margin-bottom:25px;
 }
-
 .stat-header{
-
     display:flex;
-
     justify-content:space-between;
-
     margin-bottom:10px;
 }
-
 .bar{
-
     height:16px;
-
     border-radius:30px;
-
     background:
     rgba(255,255,255,.08);
 }
-
 .fill{
-
     height:100%;
-
     border-radius:30px;
-
     background:
     linear-gradient(
     to right,
     #ff6dd9,
     #b568ff);
-
     box-shadow:
     0 0 15px #ff6dd9;
 }
-
 /* MODAL */
-
 .modal-overlay{
-
     position:fixed;
-
     inset:0;
-
     display:none;
-
     justify-content:center;
     align-items:center;
-
     background:
     rgba(0,0,0,.8);
 }
-
 .modal{
-
     width:650px;
-
     padding:40px;
-
     border-radius:30px;
-
     background:#2d1452;
-
     position:relative;
-
     border:
     2px solid rgba(255,255,255,.15);
 }
-
 .close-btn{
-
     position:absolute;
-
     top:15px;
     right:20px;
-
     border:none;
     background:none;
-
     color:white;
-
     font-size:2rem;
-
     cursor:pointer;
 }
-
 .modal form{
-
     display:flex;
     flex-direction:column;
 }
-
 .modal label{
-
     margin-top:20px;
     margin-bottom:8px;
 }
-
 .modal input,
 .modal textarea{
-
     padding:16px;
-
     border-radius:18px;
-
     border:
     1px solid rgba(255,255,255,.1);
-
     background:
     rgba(255,255,255,.03);
-
     color:white;
 }
-
 .modal textarea{
-
     resize:none;
     height:120px;
 }
-
 .save-btn{
-
     margin-top:25px;
-
     border:none;
-
     cursor:pointer;
-
     color:white;
-
     border-radius:30px;
-
     padding:18px;
-
     background:
     linear-gradient(
     to right,
     #ff6dd9,
     #b568ff);
+}
+
+.mensagem-avatar-erro{
+    margin-top:10px;
+    color:#ff8080;
+    font-size:.9rem;
+}
+
+.remover-avatar-btn{
+    margin-top:15px;
+    border:1px solid rgba(255,90,90,.4);
+    cursor:pointer;
+    color:#ff8fb3;
+    background:transparent;
+    border-radius:30px;
+    padding:12px;
+    transition:.2s;
+}
+
+.remover-avatar-btn:hover{
+    background:rgba(255,90,90,.1);
+    color:#ffffff;
+}
+#momento-atual .momento-card {
+    display: block;
+}
+
+/* =========================================
+   SEUS MOMENTOS - CARD NO PERFIL
+   ========================================= */
+
+.momento-profile-card {
+    margin-top: 25px;
+    text-align: center;
+    padding: 45px 35px;
+}
+
+.momento-profile-card .momento-card-label {
+    display: block;
+    margin-bottom: 15px;
+    color: #d9c9ff;
+    font-size: .9rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.momento-profile-card h3 {
+    margin-top: 10px;
+    font-size: 1.5rem;
+}
+
+.momento-profile-card p {
+    max-width: 600px;
+    margin: 15px auto 25px;
+    color: #d3c5ff;
+    line-height: 1.7;
+}
+
+.momento-profile-card .momento-primary-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    border: none;
+    cursor: pointer;
+    color: white;
+    border-radius: 50px;
+    padding: 15px 30px;
+    background: linear-gradient(
+        to right,
+        #ff6dd9,
+        #b568ff
+    );
+    box-shadow: 0 0 20px rgba(255, 109, 217, .2);
+    transition: .3s;
+}
+
+.momento-profile-card .momento-primary-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 0 30px rgba(255, 109, 217, .4);
 }
