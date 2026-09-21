@@ -1,0 +1,46 @@
+{% extends 'menu.html'%}
+{% block content%}
+<section class="favoritos-section" id="favoritos">
+    <div class="favoritos-container">
+        <h2 class="favoritos-titulo">Editar favorito</h2>
+
+        <form method="POST" action="{{ url_for('editar_favorito', fav_id=fav.id) }}" class="favoritos-form">
+            <div class="favorito-categoria-wrapper">
+                <select name="categoria" class="favorito-categoria">
+                    {% for cat in categorias %}
+                    <option value="{{ cat }}" {{ 'selected' if cat == fav.categoria else '' }}>{{ cat|capitalize }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="favorito-input-wrapper">
+                <input type="text" name="titulo" class="favorito-input"
+                       value="{{ fav.titulo }}" maxlength="150" required>
+            </div>
+
+            <div class="favorito-input-wrapper">
+                <input type="text" name="descricao" class="favorito-input-secundario"
+                       value="{{ fav.descricao or '' }}" placeholder="Descrição (opcional)">
+            </div>
+
+            <div class="favorito-input-wrapper">
+                <input type="url" name="url" class="favorito-input-secundario"
+                       value="{{ fav.url or '' }}" placeholder="Link (opcional)">
+            </div>
+
+            <button type="submit" class="botao-adicionar-favorito" aria-label="Salvar alterações">
+                <span>✓</span>
+            </button>
+        </form>
+
+        {% if erro_titulo %}
+        <p class="mensagem-favorito erro">{{ erro_titulo }}</p>
+        {% endif %}
+        {% if erro_url %}
+        <p class="mensagem-favorito erro">{{ erro_url }}</p>
+        {% endif %}
+
+        <a href="{{ url_for('favoritos') }}" class="filtro-link">← Voltar para favoritos</a>
+    </div>
+</section>
+{% endblock%}
