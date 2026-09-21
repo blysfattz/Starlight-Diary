@@ -1,241 +1,323 @@
+{% extends 'menu.html' %}
 
-<!DOCTYPE html>
-<html lang="pt-br">
+{% block content %}
 
-<head>
+<!-- HEADER -->
+<header class="header">
 
-    <meta charset="UTF-8">
+    <div class="user-info">
 
-    <meta name="viewport"
-          content="width=device-width, initial-scale=1.0">
+        <div class="mini-avatar">
 
-    <title>StarLight Diary - Profile</title>
+            {% if usuario.avatar %}
 
-    <link rel="stylesheet"
-          href="{{ url_for('static',
-          filename='profile.css') }}">
+            <img
+            src="{{ url_for(
+            'static',
+            filename='uploads/' + usuario.avatar
+            ) }}"
+            alt="Foto de perfil">
 
-</head>
+            {% else %}
 
-<body>
+            {{ usuario.nome[0]|upper }}
 
-<div class="dashboard">
-
-    <!-- SIDEBAR -->
-
-    <aside class="sidebar">
-
-        <div class="logo">
-
-            StarLight Diary
+            {% endif %}
 
         </div>
 
-        <nav>
+        <div>
 
-            <a href="#" class="active">
-                👤 Perfil
-            </a>
-
-            <a href="#">
-                ♡ Humor
-            </a>
-
-            <a href="#">
-                ☆ Favoritos
-            </a>
-
-        </nav>
-
-    </aside>
-
-    <!-- CONTENT -->
-
-    <main class="content">
-
-        <!-- HEADER -->
-
-        <header class="header">
-
-            <button
-                class="edit-profile-btn"
-                onclick="openModal()">
-
-                ✎ Editar Perfil
-            </button>
-
-            <a href="/alterar_senha">
-                <button type="button" class="edit-profile-btn">
-                      Alterar Senha
-                </button>
-            </a>
-
-            <a href="/logout">
-                <button type="button" class="edit-profile-btn">
-                     Sair
-                </button>
-            </a>
-
-            <div class="user-info">
-
-                <div class="mini-avatar">
-
-                    {{ usuario.nome[0]|upper }}
-
-                </div>
-
-                <div>
-
-                    <h4>
-                        {{ usuario.nome }}
-                    </h4>
-
-                    <span>
-                        {{ usuario.email }}
-                    </span>
-
-                </div>
-
-            </div>
-
-        </header>
-
-        <!-- PROFILE CARD -->
-
-        <section class="profile-card">
-
-            <div class="avatar">
-
-                {% if usuario.avatar %}
-
-                <img
-                src="{{ url_for(
-                'static',
-                filename='uploads/' + usuario.avatar
-                ) }}">
-
-                {% else %}
-
-                {{ usuario.nome[0]|upper }}
-
-                {% endif %}
-
-            </div>
-
-            <h1>
-
+            <h4>
                 {{ usuario.nome }}
+            </h4>
 
-            </h1>
+            <span>
+                {{ usuario.email }}
+            </span>
 
-            <p>
+        </div>
 
-                {% if usuario.bio %}
+    </div>
 
-                    {{ usuario.bio }}
+</header>
 
-                {% else %}
 
-                    Share something magical about yourself...
+<!-- PROFILE CARD -->
+<section class="profile-card">
 
-                {% endif %}
+    <div class="avatar">
 
-            </p>
+        {% if usuario.avatar %}
 
-        </section>
+        <img
+        src="{{ url_for(
+        'static',
+        filename='uploads/' + usuario.avatar
+        ) }}">
 
-        <!-- STATS -->
+        {% else %}
 
-        <section class="stats">
+        {{ usuario.nome[0]|upper }}
 
-            <h2>Suas Estatísticas Mágicas</h2>
+        {% endif %}
 
-            <div class="stat">
+    </div>
 
-                <div class="stat-header">
+    <h1>
+        {{ usuario.nome }}
+    </h1>
 
-                    <span>
-                        Porcentagem do perfil
+    <p>
+
+        {% if usuario.bio %}
+
+            {{ usuario.bio }}
+
+        {% else %}
+
+            Compartilhe algo mágico sobre você...
+
+        {% endif %}
+
+    </p>
+
+</section>
+
+
+<!-- STATS -->
+<section class="stats">
+
+    <h2>Suas Estatísticas Mágicas</h2>
+
+    <div class="stat">
+
+        <div class="stat-header">
+
+            <span>
+                Porcentagem do perfil
+            </span>
+
+            <span>
+                {{ usuario.percentual_perfil() }}%
+            </span>
+
+        </div>
+
+        <div class="bar">
+
+            <div
+            class="fill"
+            style="width:
+            {{ usuario.percentual_perfil() }}%">
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <div class="stat">
+
+        <div class="stat-header">
+
+            <span>
+                Registros de Humor
+            </span>
+
+            <span>
+                {{ usuario.total_humores }}
+            </span>
+
+        </div>
+
+    <div class ="bar">
+       <div
+       class="fill"
+       style="width: {{ 100 if usuario.total_humores >= 50 else usuario.total_humores * 2 }}%;">
+       </div>
+    </div>
+
+
+    <div class="stat">
+
+        <div class="stat-header">
+
+            <span>
+                Interesses adicionados
+            </span>
+
+            <span>
+                {{ usuario.favoritos|length }}
+            </span>
+
+        </div>
+
+        <div class="bar">
+
+            <div
+            class="fill"
+            style="width:
+            {{ (usuario.favoritos|length) * 10 }}%">
+            </div>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+<!-- SEU MOMENTO -->
+<section class="momento-section" id="momento-atual">
+
+    <div class="momento-header">
+
+        <span class="momento-eyebrow">
+            ✦ Um registro do agora
+        </span>
+
+        <h2>Seu momento</h2>
+
+        <p>
+            Uma pequena fotografia do seu agora.
+        </p>
+
+    </div>
+
+
+    {% if momento_atual %}
+
+        <article class="momento-card">
+
+            <div class="momento-card-top">
+
+                <span class="momento-card-label">
+                    Seu momento atual
+                </span>
+                <a href="{{ url_for('editar_momento') }}" class="momento-edit-button">
+                     ✦ Editar momento
+                </a>
+
+            </div>
+
+
+            <div class="momento-content">
+
+                <div class="momento-item">
+
+                    <span class="momento-item-title">
+                        ♡ Sentindo
                     </span>
 
-                    <span>
-                        {{ usuario.percentual_perfil() }}%
-                    </span>
+                    <strong>
+                        {{ sentindo or "Nenhum humor registrado" }}
+                    </strong>
 
                 </div>
 
-                <div class="bar">
 
-                    <div
-                    class="fill"
-                    style="width:
-                    {{ usuario.percentual_perfil() }}%">
-                    </div>
+                <div class="momento-item">
+
+                    <span class="momento-item-title">
+                        ♪ Ouvindo
+                    </span>
+
+                    <strong>
+                        {{ momento_atual.ouvindo }}
+                    </strong>
+
+                </div>
+
+
+                <div class="momento-item">
+
+                    <span class="momento-item-title">
+                        ◇ Lendo
+                    </span>
+
+                    <strong>
+                        {{ momento_atual.lendo }}
+                    </strong>
+
+                </div>
+
+
+                <div class="momento-item momento-thought">
+
+                    <span class="momento-item-title">
+                        ✦ {{ momento_atual.frase_inicio }}
+                    </span>
+
+                    <p>
+                        {{ momento_atual.frase_complemento or "" }}
+                    </p>
+
+                </div>
+
+
+                <div class="momento-item momento-atmosfera">
+
+                    <span class="momento-item-title">
+                        ☾ Clima do momento
+                    </span>
+
+                    <strong>
+                        {{ momento_atual.atmosfera }}
+                    </strong>
 
                 </div>
 
             </div>
 
-            <div class="stat">
 
-                <div class="stat-header">
+            <div class="momento-card-footer">
 
-                    <span>
-                        Resgistros de Humor
-                    </span>
-
-                    <span>
-                        {{ usuario.total_humores }}
-                    </span>
-
-                </div>
-
-                <div class="bar">
-
-                    <div
-                    class="fill"
-                    style="width:
-                    {{ usuario.total_humores * 2 }}%">
-                    </div>
-
-                </div>
+                <span>
+                    {{ momento_atualizado_em or "Atualizado agora" }}
+                </span>
 
             </div>
 
-            <div class="stat">
+        </article>
 
-                <div class="stat-header">
 
-                    <span>
-                        Interesses adicionados
-                    </span>
+   {% else %}
 
-                    <span>
-                        {{ usuario.total_interesses }}
-                    </span>
+    <article class="momento-empty momento-profile-card">
 
-                </div>
+        <div class="momento-empty-icon">
+            ✦
+        </div>
 
-                <div class="bar">
+        <span class="momento-card-label">
+            Seus Momentos
+        </span>
 
-                    <div
-                    class="fill"
-                    style="width:
-                    {{ usuario.total_interesses * 10 }}%">
-                    </div>
+        <h3>
+            Como está o seu agora?
+        </h3>
 
-                </div>
+        <p>
+            Registre um pouco do que faz parte deste momento:
+            o que você está ouvindo, lendo, pensando e vivendo.
+        </p>
 
-            </div>
+        <a
+            href="{{ url_for('momentos') }}"
+            class="momento-primary-button"
+        >
+            ✦ Criar meu momento
+        </a>
 
-        </section>
+    </article>
 
-    </main>
+   {% endif %}
 
-</div>
 
-<!-- MODAL -->
+</section>
 
+<!-- MODAL DE EDIÇÃO DE PERFIL -->
 <div
 class="modal-overlay"
 id="modal">
@@ -250,30 +332,67 @@ id="modal">
 
         </button>
 
-        <h2>Editar Seu Perfil</h2>
+
+        <h2>
+            Editar Seu Perfil
+        </h2>
+
 
         <form
         method="POST"
         action="/update-profile"
         enctype="multipart/form-data">
 
-            <label>Nome</label>
+            <label>
+                Nome
+            </label>
 
             <input
             type="text"
             name="nome"
             value="{{ usuario.nome }}">
 
-            <label>Bio</label>
+
+            <label>
+                Bio
+            </label>
 
             <textarea
             name="bio">{{ usuario.bio }}</textarea>
 
-            <label>Avatar</label>
+
+            <label>
+                Avatar
+            </label>
 
             <input
             type="file"
-            name="avatar">
+            name="avatar"
+            accept=".jpg,.jpeg,.png,.gif">
+
+
+            {% if erro_avatar %}
+
+            <p class="mensagem-avatar-erro">
+                {{ erro_avatar }}
+            </p>
+
+            {% endif %}
+
+
+            {% if usuario.avatar %}
+
+            <button
+            type="button"
+            class="remover-avatar-btn"
+            onclick="document.getElementById('form-remover-avatar').submit();">
+
+                Remover foto atual
+
+            </button>
+
+            {% endif %}
+
 
             <button
             type="submit"
@@ -285,14 +404,49 @@ id="modal">
 
         </form>
 
+
+        <form
+        id="form-remover-avatar"
+        method="POST"
+        action="/remove-avatar"
+        style="display: none;">
+
+        </form>
+
     </div>
 
 </div>
 
-<script
-src="{{ url_for('static',
-filename='profile.js') }}">
+{% endblock %}
+
+{% block extra_js %}
+
+<script src="{{ url_for('static', filename='profile.js') }}"></script>
+
+<script>
+
+    document.addEventListener('DOMContentLoaded', function () {
+
+        {% if erro_avatar %}
+
+        openModal();
+
+        {% endif %}
+
+        var params = new URLSearchParams(
+            window.location.search
+        );
+
+        if (params.get('edit') === '1') {
+
+            openModal();
+
+        }
+
+    });
+
 </script>
 
-</body>
-</html>
+<script src="{{ url_for('static', filename='js/momentos.js') }}"></script>
+
+{% endblock %}
