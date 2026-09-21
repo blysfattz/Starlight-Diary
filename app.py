@@ -38,31 +38,52 @@ def home():
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'GET':
+
         return render_template('login.html')
-    nome  = request.form.get("nomeForm", "").strip()
+    email = request.form.get("emailForm", "").strip().lower()
     senha = request.form.get("senhaForm", "")
-    user  = db.session.query(Usuario).filter_by(nome=nome).first()
+
+    user = db.session.query(Usuario).filter_by(email=email).first()
+
     if not user or not check_password_hash(user.senha, senha):
-        return render_template('login.html', erro='Nome ou senha incorretos.')
+        return render_template(
+            'login.html',
+            erro='E-mail ou senha incorretos.'
+        )
+
     login_user(user)
+
     return redirect(url_for('profile'))
+
+
 
 @app.route('/registrar', methods=['POST', 'GET'])
 def registrar():
     if request.method == "GET":
         return render_template('registrar.html')
-    nome     = request.form.get("nomeForm", "").strip()
-    senha    = request.form.get("senhaForm", "")
-    confirma = request.form.get("confirmaForm", "")
-    pergunta = request.form.get("perguntaForm", "").strip()
-    resposta = request.form.get("respostaForm", "").strip().lower()
-    erros    = {}
 
+    email = request.form.get("emailForm", "").strip().lower()
+    nome = request.form.get("nomeForm", "").strip()
+    senha = request.form.get("senhaForm", "")
+    confirma = request.form.get("confirmaForm", "")
+
+    erros = {}
+
+    # VALIDAÇÃO DO E-MAIL
+    if not email:
+        erros['erro_email'] = 'O e-mail é obrigatório.'
+    elif not re.match(r'^[^@\s]+@[^@\s]+\.[^@\s]+$', email):
+        erros['erro_email'] = 'Digite um e-mail válido.'
+    elif db.session.query(Usuario).filter_by(email=email).first():
+        erros['erro_email'] = 'Este e-mail já está cadastrado.'
+
+    # VALIDAÇÃO DO NOME
     if not nome:
         erros['erro_nome'] = 'O nome é obrigatório.'
     elif db.session.query(Usuario).filter_by(nome=nome).first():
         erros['erro_nome'] = 'Este nome de usuário já está em uso.'
 
+    # VALIDAÇÃO DA SENHA
     if not senha:
         erros['erro_senha'] = 'A senha é obrigatória.'
     elif len(senha) < 6:
@@ -74,28 +95,31 @@ def registrar():
     elif not re.search(r'[^a-zA-Z0-9]', senha):
         erros['erro_senha'] = 'A senha deve ter pelo menos um caractere especial.'
 
-    if senha and confirma and senha != confirma:
+    # CONFIRMAÇÃO
+    if not confirma:
+        erros['erro_confirma'] = 'Confirme sua senha.'
+    elif senha != confirma:
         erros['erro_confirma'] = 'As senhas não coincidem.'
 
-    if not pergunta:
-        erros['erro_pergunta'] = 'A pergunta secreta é obrigatória.'
-
-    if not resposta:
-        erros['erro_resposta'] = 'A resposta secreta é obrigatória.'
-
     if erros:
-        return render_template('registrar.html', nome_digitado=nome,
-                               pergunta_digitada=pergunta, **erros)
+        return render_template(
+            'registrar.html',
+            email_digitado=email,
+            nome_digitado=nome,
+            **erros
+        )
 
     novo_usuario = Usuario(
+        email=email,
         nome=nome,
-        senha=generate_password_hash(senha),
-        pergunta_secreta=pergunta,
-        resposta_secreta=generate_password_hash(resposta)
+        senha=generate_password_hash(senha)
     )
+
     db.session.add(novo_usuario)
     db.session.commit()
+
     login_user(novo_usuario)
+
     return redirect(url_for("profile"))
 
 @app.route('/logout')
@@ -107,91 +131,77 @@ def logout():
 
 @app.route('/recuperar', methods=['GET', 'POST'])
 def recuperar():
+
     if request.method == 'GET':
         return render_template('recuperar.html')
-    nome = request.form.get("nomeForm", "").strip()
-    user = db.session.query(Usuario).filter_by(nome=nome).first()
-    if not user:
-        return render_template('recuperar.html', erro='Usuário não encontrado.')
-    return render_template('responder_pergunta.html',
-                           nome=nome,
-                           pergunta=user.pergunta_secreta)
 
-@app.route('/recuperar/verificar', methods=['POST'])
-def verificar_resposta():
-    nome     = request.form.get("nomeForm", "").strip()
-    resposta = request.form.get("respostaForm", "").strip().lower()
-    user     = db.session.query(Usuario).filter_by(nome=nome).first()
-    if not user or not check_password_hash(user.resposta_secreta, resposta):
-        return render_template('responder_pergunta.html',
-                               nome=nome,
-                               pergunta=user.pergunta_secreta,
-                               erro='Resposta incorreta.')
-    return render_template('nova_senha.html', nome=nome)
+    email = request.form.get("emailForm", "").strip().lower()
+
+    user = db.session.query(Usuario).filter_by(email=email).first()
+
+    if not user:
+        return render_template(
+            'recuperar.html',
+            erro='E-mail não encontrado.'
+        )
+
+    return render_template(
+        'nova_senha.html',
+        email=email
+    )
+
 
 @app.route('/recuperar/nova_senha', methods=['POST'])
 def nova_senha():
-    nome     = request.form.get("nomeForm", "").strip()
-    senha    = request.form.get("senhaForm", "")
+
+    email = request.form.get("emailForm", "").strip().lower()
+
+    senha = request.form.get("senhaForm", "")
     confirma = request.form.get("confirmaForm", "")
-    erros    = {}
+
+    erros = {}
 
     if not senha:
         erros['erro_senha'] = 'A senha é obrigatória.'
+
     elif len(senha) < 6:
         erros['erro_senha'] = 'A senha deve ter no mínimo 6 caracteres.'
+
     elif not re.search(r'[A-Z]', senha):
         erros['erro_senha'] = 'A senha deve ter pelo menos uma letra maiúscula.'
+
     elif not re.search(r'[a-z]', senha):
         erros['erro_senha'] = 'A senha deve ter pelo menos uma letra minúscula.'
+
     elif not re.search(r'[^a-zA-Z0-9]', senha):
         erros['erro_senha'] = 'A senha deve ter pelo menos um caractere especial.'
 
-    if senha and confirma and senha != confirma:
+    if not confirma:
+        erros['erro_confirma'] = 'Confirme sua senha.'
+
+    elif senha != confirma:
         erros['erro_confirma'] = 'As senhas não coincidem.'
 
     if erros:
-        return render_template('nova_senha.html', nome=nome, **erros)
+        return render_template(
+            'nova_senha.html',
+            email=email,
+            **erros
+        )
 
-    user = db.session.query(Usuario).filter_by(nome=nome).first()
+    user = db.session.query(Usuario).filter_by(email=email).first()
+
+    if not user:
+        return render_template(
+            'recuperar.html',
+            erro='E-mail não encontrado.'
+        )
+
     user.senha = generate_password_hash(senha)
+
     db.session.commit()
+
     return redirect(url_for('login'))
-
-@app.route('/alterar_senha', methods=['GET', 'POST'])
-@login_required
-def alterar_senha():
-    if request.method == 'GET':
-        return render_template('alterar_senha.html')
-
-    senha_atual = request.form.get("senhaAtualForm", "")
-    senha_nova  = request.form.get("senhaForm", "")
-    confirma    = request.form.get("confirmaForm", "")
-    erros       = {}
-
-    if not check_password_hash(current_user.senha, senha_atual):
-        erros['erro_atual'] = 'Senha atual incorreta.'
-
-    if not senha_nova:
-        erros['erro_senha'] = 'A nova senha é obrigatória.'
-    elif len(senha_nova) < 6:
-        erros['erro_senha'] = 'A senha deve ter no mínimo 6 caracteres.'
-    elif not re.search(r'[A-Z]', senha_nova):
-        erros['erro_senha'] = 'A senha deve ter pelo menos uma letra maiúscula.'
-    elif not re.search(r'[a-z]', senha_nova):
-        erros['erro_senha'] = 'A senha deve ter pelo menos uma letra minúscula.'
-    elif not re.search(r'[^a-zA-Z0-9]', senha_nova):
-        erros['erro_senha'] = 'A senha deve ter pelo menos um caractere especial.'
-
-    if senha_nova and confirma and senha_nova != confirma:
-        erros['erro_confirma'] = 'As senhas não coincidem.'
-
-    if erros:
-        return render_template('alterar_senha.html', **erros)
-
-    current_user.senha = generate_password_hash(senha_nova)
-    db.session.commit()
-    return redirect(url_for('profile'))
 
 
 @app.route("/profile")
@@ -219,7 +229,7 @@ def update_profile():
     return redirect(url_for('profile'))
 
 
-TIPOS_HUMOR = ['feliz', 'triste', 'ansioso', 'calmo', 'animado',
+TIPOS_HUMOR = ['feliz', 'triste', 'ansioso', 'calma', 'animado',
                'cansado', 'frustrado', 'grato']
 
 @app.route('/humor', methods=['GET', 'POST'])
@@ -550,79 +560,177 @@ def _tempo_relativo(data):
 
 
 def _contexto_momento(usuario_id):
-    """Monta todo o contexto do 'Seu Momento' necessário para renderizar o
-    card no perfil: o momento mais recente, o humor atual (campo
-    "Sentindo", vindo direto do sistema de Humor — HU03), os interesses
-    cadastrados para os seletores de artista/livro, e as opções fixas de
-    frase/atmosfera para o formulário de criação/edição."""
     momento_atual = _momento_atual(usuario_id)
     humor_atual = _humor_atual(usuario_id)
 
     return {
         "momento_atual": momento_atual,
-        "momento_atualizado_em": _tempo_relativo(momento_atual.data) if momento_atual else None,
+
+        "momento_atualizado_em": (
+            _tempo_relativo(momento_atual.atualizado_em)
+            if momento_atual else None
+        ),
+
         "sentindo": humor_atual.tipo if humor_atual else None,
-        "artistas_cadastrados": _favoritos_por_categoria(usuario_id, "música"),
-        "livros_cadastrados": _favoritos_por_categoria(usuario_id, "livro"),
+
+        "artistas_cadastrados": _favoritos_por_categoria(
+            usuario_id, "música"
+        ),
+
+        "livros_cadastrados": _favoritos_por_categoria(
+            usuario_id, "livro"
+        ),
+
         "frases_momento": FRASES_MOMENTO,
+
         "atmosferas_momento": ATMOSFERAS_MOMENTO,
+
         "nao_lendo": NAO_LENDO,
     }
 
-
-@app.route('/momento', methods=['POST'])
+@app.route('/momentos', methods=['GET', 'POST'])
 @login_required
-def salvar_momento():
-    """Cadastra um novo momento para o usuário logado (CA02/HU02).
+def momentos():
 
-    Cada chamada cria uma NOVA linha na tabela de momentos (nunca
-    atualiza uma existente), garantindo que o registro anterior seja
-    preservado no histórico (CA04/HU02) e que o perfil sempre exiba o
-    mais recente como o momento atual (CA03/HU02).
-    """
-    ouvindo           = request.form.get("ouvindo", "").strip()
-    lendo             = request.form.get("lendo", "").strip()
-    frase_inicio      = request.form.get("frase_inicio", "").strip()
+    momento = _momento_atual(current_user.id)
+
+    if request.method == 'POST':
+
+        ouvindo = request.form.get("ouvindo", "").strip()
+        lendo = request.form.get("lendo", "").strip()
+        frase_inicio = request.form.get("frase_inicio", "").strip()
+        frase_complemento = request.form.get("frase_complemento", "").strip()
+        atmosfera = request.form.get("atmosfera", "").strip()
+
+        erros = {}
+
+        if not ouvindo:
+            erros['erro_ouvindo'] = 'Informe o que você está ouvindo.'
+        elif len(ouvindo) > 150:
+            erros['erro_ouvindo'] = 'O nome do artista deve ter no máximo 150 caracteres.'
+
+        if not lendo:
+            lendo = NAO_LENDO
+
+        if frase_inicio not in FRASES_MOMENTO:
+            erros['erro_frase'] = 'Selecione uma forma válida de iniciar sua frase.'
+
+        if len(frase_complemento) > 120:
+            erros['erro_complemento'] = 'A frase deve ter no máximo 120 caracteres.'
+
+        if atmosfera not in ATMOSFERAS_MOMENTO:
+            erros['erro_atmosfera'] = 'Selecione uma atmosfera válida.'
+
+        if erros:
+            return render_template(
+                "momentos.html",
+                momento_atual=momento,
+                **_contexto_momento(current_user.id),
+                **erros
+            )
+
+        novo_momento = Momento(
+            usuario_id=current_user.id,
+            ouvindo=ouvindo,
+            lendo=lendo,
+            frase_inicio=frase_inicio,
+            frase_complemento=frase_complemento if frase_complemento else None,
+            atmosfera=atmosfera
+        )
+
+        db.session.add(novo_momento)
+        db.session.commit()
+
+        return redirect(url_for('profile'))
+
+    return render_template(
+        "momentos.html",
+        **_contexto_momento(current_user.id)
+    )
+
+@app.route('/momentos/editar', methods=['GET', 'POST'])
+@login_required
+def editar_momento():
+
+    momento = _momento_atual(current_user.id)
+
+    # Se ainda não existe momento, não há nada para editar
+    if not momento:
+        return redirect(url_for('momentos'))
+
+    # ABRIR FORMULÁRIO
+    if request.method == 'GET':
+
+        return render_template(
+            'momento_editar.html',
+            momento=momento,
+            **_contexto_momento(current_user.id)
+        )
+
+    # RECEBER DADOS DO FORMULÁRIO
+
+    ouvindo = request.form.get("ouvindo", "").strip()
+    lendo = request.form.get("lendo", "").strip()
+    frase_inicio = request.form.get("frase_inicio", "").strip()
     frase_complemento = request.form.get("frase_complemento", "").strip()
-    atmosfera         = request.form.get("atmosfera", "").strip()
+    atmosfera = request.form.get("atmosfera", "").strip()
 
     erros = {}
 
     if not ouvindo:
         erros['erro_ouvindo'] = 'Informe o que você está ouvindo.'
+
     elif len(ouvindo) > 150:
-        erros['erro_ouvindo'] = 'O nome do artista deve ter no máximo 150 caracteres.'
+        erros['erro_ouvindo'] = (
+            'O nome do artista deve ter no máximo 150 caracteres.'
+        )
 
     if not lendo:
         lendo = NAO_LENDO
+
     elif len(lendo) > 150:
-        erros['erro_lendo'] = 'O título deve ter no máximo 150 caracteres.'
+        erros['erro_lendo'] = (
+            'O título deve ter no máximo 150 caracteres.'
+        )
 
     if frase_inicio not in FRASES_MOMENTO:
-        erros['erro_frase'] = 'Selecione uma forma válida de iniciar sua frase.'
+        erros['erro_frase'] = (
+            'Selecione uma forma válida de iniciar sua frase.'
+        )
 
     if len(frase_complemento) > 120:
-        erros['erro_complemento'] = 'A frase deve ter no máximo 120 caracteres.'
+        erros['erro_complemento'] = (
+            'A frase deve ter no máximo 120 caracteres.'
+        )
 
     if atmosfera not in ATMOSFERAS_MOMENTO:
-        erros['erro_atmosfera'] = 'Selecione uma atmosfera válida.'
+        erros['erro_atmosfera'] = (
+            'Selecione uma atmosfera válida.'
+        )
 
+    # SE TIVER ERRO, VOLTA PARA O FORMULÁRIO
     if erros:
-        return render_template("profile.html", usuario=current_user,
-                               **_contexto_momento(current_user.id), **erros)
 
-    db.session.add(Momento(
-        usuario_id=current_user.id,
-        ouvindo=ouvindo,
-        lendo=lendo,
-        frase_inicio=frase_inicio,
-        frase_complemento=frase_complemento if frase_complemento else None,
-        atmosfera=atmosfera
-    ))
+        return render_template(
+            'momento_editar.html',
+            momento=momento,
+            **_contexto_momento(current_user.id),
+            **erros
+        )
+
+    # ATUALIZA O MOMENTO EXISTENTE
+
+    momento.ouvindo = ouvindo
+    momento.lendo = lendo
+    momento.frase_inicio = frase_inicio
+    momento.frase_complemento = (
+        frase_complemento if frase_complemento else None
+    )
+    momento.atmosfera = atmosfera
+
     db.session.commit()
+
     return redirect(url_for('profile'))
-
-
 @app.route('/momento/historico')
 @login_required
 def momento_historico():
