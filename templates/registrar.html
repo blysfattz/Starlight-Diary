@@ -5,6 +5,12 @@
         <h1>Criar conta</h1>
         <p>Comece sua jornada virtual</p>
 
+        <input type="email" name="emailForm" placeholder="E-mail"
+            value="{{ email_digitado or '' }}">
+        {% if erro_email %}
+             <p class="erro">{{ erro_email }}</p>
+        {% endif %}
+
         <input type="text" name="nomeForm" placeholder="Nome"
                value="{{ nome_digitado or '' }}">
         {% if erro_nome %}
@@ -26,17 +32,6 @@
         <input type="password" name="confirmaForm" placeholder="Confirmar senha">
         {% if erro_confirma %}
             <p class="erro">{{ erro_confirma }}</p>
-        {% endif %}
-
-        <input type="text" name="perguntaForm" placeholder="Sua pergunta secreta"
-               value="{{ pergunta_digitada or '' }}">
-        {% if erro_pergunta %}
-            <p class="erro">{{ erro_pergunta }}</p>
-        {% endif %}
-
-        <input type="text" name="respostaForm" placeholder="Resposta da pergunta secreta">
-        {% if erro_resposta %}
-            <p class="erro">{{ erro_resposta }}</p>
         {% endif %}
 
         <button type="submit">Cadastre-se</button>
