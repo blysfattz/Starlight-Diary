@@ -4,15 +4,19 @@
     <form class="glass-form" action="/recuperar/nova_senha" method="POST">
         <h1>Nova senha</h1>
         <p>Crie uma nova senha para sua conta</p>
+
         <input type="hidden" name="emailForm" value="{{ email }}">
+
         <input type="password" name="senhaForm" placeholder="Nova senha">
         {% if erro_senha %}
             <p class="erro">{{ erro_senha }}</p>
         {% endif %}
+
         <input type="password" name="confirmaForm" placeholder="Confirmar nova senha">
         {% if erro_confirma %}
             <p class="erro">{{ erro_confirma }}</p>
         {% endif %}
+
         <button type="submit">Salvar nova senha</button>
     </form>
 </div>
