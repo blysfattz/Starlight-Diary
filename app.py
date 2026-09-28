@@ -229,8 +229,8 @@ def update_profile():
     return redirect(url_for('profile'))
 
 
-TIPOS_HUMOR = ['feliz', 'triste', 'ansioso', 'calma', 'animado',
-               'cansado', 'frustrado', 'grato']
+TIPOS_HUMOR = ['feliz', 'triste', 'criativa', 'calma', 'animada',
+               'cansado', 'energetico', 'pensativo']
 
 @app.route('/humor', methods=['GET', 'POST'])
 @login_required
