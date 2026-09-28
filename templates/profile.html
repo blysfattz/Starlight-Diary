@@ -84,90 +84,6 @@
 
 </section>
 
-
-<!-- STATS -->
-<section class="stats">
-
-    <h2>Suas Estatísticas Mágicas</h2>
-
-    <div class="stat">
-
-        <div class="stat-header">
-
-            <span>
-                Porcentagem do perfil
-            </span>
-
-            <span>
-                {{ usuario.percentual_perfil() }}%
-            </span>
-
-        </div>
-
-        <div class="bar">
-
-            <div
-            class="fill"
-            style="width:
-            {{ usuario.percentual_perfil() }}%">
-            </div>
-
-        </div>
-
-    </div>
-
-
-    <div class="stat">
-
-        <div class="stat-header">
-
-            <span>
-                Registros de Humor
-            </span>
-
-            <span>
-                {{ usuario.total_humores }}
-            </span>
-
-        </div>
-
-    <div class ="bar">
-       <div
-       class="fill"
-       style="width: {{ 100 if usuario.total_humores >= 50 else usuario.total_humores * 2 }}%;">
-       </div>
-    </div>
-
-
-    <div class="stat">
-
-        <div class="stat-header">
-
-            <span>
-                Interesses adicionados
-            </span>
-
-            <span>
-                {{ usuario.favoritos|length }}
-            </span>
-
-        </div>
-
-        <div class="bar">
-
-            <div
-            class="fill"
-            style="width:
-            {{ (usuario.favoritos|length) * 10 }}%">
-            </div>
-
-        </div>
-
-    </div>
-
-</section>
-
-
 <!-- SEU MOMENTO -->
 <section class="momento-section" id="momento-atual">
 
@@ -316,6 +232,90 @@
 
 
 </section>
+
+
+<!-- STATS -->
+<section class="stats">
+
+    <h2>Suas Estatísticas Mágicas</h2>
+
+    <div class="stat">
+
+        <div class="stat-header">
+
+            <span>
+                Porcentagem do perfil
+            </span>
+
+            <span>
+                {{ usuario.percentual_perfil() }}%
+            </span>
+
+        </div>
+
+        <div class="bar">
+
+            <div
+            class="fill"
+            style="width:
+            {{ usuario.percentual_perfil() }}%">
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <div class="stat">
+
+        <div class="stat-header">
+
+            <span>
+                Registros de Humor
+            </span>
+
+            <span>
+                {{ usuario.total_humores }}
+            </span>
+
+        </div>
+
+    <div class ="bar">
+       <div
+       class="fill"
+       style="width: {{ 100 if usuario.total_humores >= 50 else usuario.total_humores * 2 }}%;">
+       </div>
+    </div>
+
+
+    <div class="stat">
+
+        <div class="stat-header">
+
+            <span>
+                Interesses adicionados
+            </span>
+
+            <span>
+                {{ usuario.favoritos|length }}
+            </span>
+
+        </div>
+
+        <div class="bar">
+
+            <div
+            class="fill"
+            style="width:
+            {{ (usuario.favoritos|length) * 10 }}%">
+            </div>
+
+        </div>
+
+    </div>
+
+</section>
+
 
 <!-- MODAL DE EDIÇÃO DE PERFIL -->
 <div
