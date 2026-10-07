@@ -6,6 +6,8 @@ import os
 from werkzeug.utils import secure_filename
 import re
 from datetime import datetime, timedelta
+from bisect import bisect_right
+from math import ceil
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'dev-key-virtual-life-2026')
@@ -69,7 +71,6 @@ def registrar():
 
     erros = {}
 
-    # VALIDAÇÃO DO E-MAIL
     if not email:
         erros['erro_email'] = 'O e-mail é obrigatório.'
     elif not re.match(r'^[^@\s]+@[^@\s]+\.[^@\s]+$', email):
@@ -77,13 +78,11 @@ def registrar():
     elif db.session.query(Usuario).filter_by(email=email).first():
         erros['erro_email'] = 'Este e-mail já está cadastrado.'
 
-    # VALIDAÇÃO DO NOME
     if not nome:
         erros['erro_nome'] = 'O nome é obrigatório.'
     elif db.session.query(Usuario).filter_by(nome=nome).first():
         erros['erro_nome'] = 'Este nome de usuário já está em uso.'
 
-    # VALIDAÇÃO DA SENHA
     if not senha:
         erros['erro_senha'] = 'A senha é obrigatória.'
     elif len(senha) < 6:
@@ -362,7 +361,6 @@ CATEGORIAS_FAVORITO = ['música', 'série', 'filme', 'livro', 'jogo',
 @login_required
 def favoritos():
     """Lista todos os favoritos e permite adicionar um novo."""
-    # Filtro opcional por categoria via query string: /favoritos?categoria=série
     categoria_filtro = request.args.get('categoria', '').strip().lower()
 
     if request.method == 'POST':
@@ -654,11 +652,9 @@ def editar_momento():
 
     momento = _momento_atual(current_user.id)
 
-    # Se ainda não existe momento, não há nada para editar
     if not momento:
         return redirect(url_for('momentos'))
 
-    # ABRIR FORMULÁRIO
     if request.method == 'GET':
 
         return render_template(
@@ -667,7 +663,6 @@ def editar_momento():
             **_contexto_momento(current_user.id)
         )
 
-    # RECEBER DADOS DO FORMULÁRIO
 
     ouvindo = request.form.get("ouvindo", "").strip()
     lendo = request.form.get("lendo", "").strip()
@@ -708,7 +703,7 @@ def editar_momento():
             'Selecione uma atmosfera válida.'
         )
 
-    # SE TIVER ERRO, VOLTA PARA O FORMULÁRIO
+
     if erros:
 
         return render_template(
@@ -718,7 +713,6 @@ def editar_momento():
             **erros
         )
 
-    # ATUALIZA O MOMENTO EXISTENTE
 
     momento.ouvindo = ouvindo
     momento.lendo = lendo
@@ -731,37 +725,86 @@ def editar_momento():
     db.session.commit()
 
     return redirect(url_for('profile'))
+
+
+MOMENTOS_POR_PAGINA = 10
+FILTROS_PERIODO = ('todos', 'este_mes', 'ultimos_meses')
+
+
+def _humores_do_usuario(usuario_id):
+    """Todos os humores do usuário em ordem cronológica (uma única consulta),
+    usados para descobrir como a pessoa se sentia em cada momento."""
+    return (db.session.query(Humor)
+            .filter_by(usuario_id=usuario_id)
+            .order_by(Humor.data.asc())
+            .all())
+
+
+def _humor_na_epoca(humores, data):
+    """Tipo do último humor registrado até a data informada (ou None).
+    `humores` precisa estar ordenado de forma crescente por data."""
+    posicao = bisect_right([h.data for h in humores], data)
+    return humores[posicao - 1].tipo if posicao else None
+
+
 @app.route('/momento/historico')
 @login_required
 def momento_historico():
-    """Histórico completo dos momentos do usuário, com filtros de
-    período ('todos', 'este_mes', 'ultimos_meses'), usado pela página de
-    recapitulação ('Recapitule aqui os seus momentos')."""
+    """Histórico completo dos momentos do usuário, usado pela página de
+    recapitulação ('Recapitule aqui os seus momentos').
+
+    Parâmetros de URL (todos opcionais):
+      filtro    -> 'todos' (padrão), 'este_mes' ou 'ultimos_meses' (90 dias)
+      atmosfera -> uma das ATMOSFERAS_MOMENTO
+      pagina    -> número da página (padrão 1)
+    """
     filtro = request.args.get('filtro', 'todos').strip().lower()
+    atmosfera = request.args.get('atmosfera', '').strip()
+    pagina = request.args.get('pagina', 1, type=int)
+
+    if filtro not in FILTROS_PERIODO:
+        filtro = 'todos'
+    if atmosfera not in ATMOSFERAS_MOMENTO:
+        atmosfera = ''
 
     query = db.session.query(Momento).filter_by(usuario_id=current_user.id)
 
     agora = datetime.utcnow()
     if filtro == 'este_mes':
-        inicio_do_mes = agora.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        inicio_do_mes = agora.replace(day=1, hour=0, minute=0,
+                                      second=0, microsecond=0)
         query = query.filter(Momento.data >= inicio_do_mes)
     elif filtro == 'ultimos_meses':
-        limite = agora - timedelta(days=90)
-        query = query.filter(Momento.data >= limite)
-    else:
-        filtro = 'todos'
+        query = query.filter(Momento.data >= agora - timedelta(days=90))
 
-    registros = query.order_by(Momento.data.desc()).all()
+    if atmosfera:
+        query = query.filter(Momento.atmosfera == atmosfera)
 
+    
+    total = query.count()
+    total_paginas = max(1, ceil(total / MOMENTOS_POR_PAGINA))
+    pagina = max(1, min(pagina or 1, total_paginas))
+
+    registros = (query
+                 .order_by(Momento.data.desc(), Momento.id.desc())
+                 .offset((pagina - 1) * MOMENTOS_POR_PAGINA)
+                 .limit(MOMENTOS_POR_PAGINA)
+                 .all())
+
+    humores = _humores_do_usuario(current_user.id)
     for registro in registros:
-        humor_na_epoca = (db.session.query(Humor)
-                          .filter(Humor.usuario_id == current_user.id,
-                                  Humor.data <= registro.data)
-                          .order_by(Humor.data.desc())
-                          .first())
-        registro.sentindo = humor_na_epoca.tipo if humor_na_epoca else None
+        registro.sentindo = _humor_na_epoca(humores, registro.data)
 
-    return render_template('momento_historico.html', registros=registros, filtro=filtro)
+    return render_template(
+        'momento_historico.html',
+        registros=registros,
+        filtro=filtro,
+        atmosfera=atmosfera,
+        atmosferas_momento=ATMOSFERAS_MOMENTO,
+        pagina=pagina,
+        total_paginas=total_paginas,
+        total=total,
+    )
 
 
 if __name__ == '__main__':
