@@ -6,6 +6,7 @@ import os
 from werkzeug.utils import secure_filename
 import re
 from datetime import datetime, timedelta
+from bisect import bisect_right
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'dev-key-virtual-life-2026')
@@ -362,7 +363,6 @@ CATEGORIAS_FAVORITO = ['música', 'série', 'filme', 'livro', 'jogo',
 @login_required
 def favoritos():
     """Lista todos os favoritos e permite adicionar um novo."""
-    # Filtro opcional por categoria via query string: /favoritos?categoria=série
     categoria_filtro = request.args.get('categoria', '').strip().lower()
 
     if request.method == 'POST':
@@ -654,11 +654,10 @@ def editar_momento():
 
     momento = _momento_atual(current_user.id)
 
-    # Se ainda não existe momento, não há nada para editar
+   
     if not momento:
         return redirect(url_for('momentos'))
 
-    # ABRIR FORMULÁRIO
     if request.method == 'GET':
 
         return render_template(
@@ -667,7 +666,6 @@ def editar_momento():
             **_contexto_momento(current_user.id)
         )
 
-    # RECEBER DADOS DO FORMULÁRIO
 
     ouvindo = request.form.get("ouvindo", "").strip()
     lendo = request.form.get("lendo", "").strip()
@@ -708,7 +706,7 @@ def editar_momento():
             'Selecione uma atmosfera válida.'
         )
 
-    # SE TIVER ERRO, VOLTA PARA O FORMULÁRIO
+ 
     if erros:
 
         return render_template(
@@ -718,7 +716,6 @@ def editar_momento():
             **erros
         )
 
-    # ATUALIZA O MOMENTO EXISTENTE
 
     momento.ouvindo = ouvindo
     momento.lendo = lendo
@@ -731,37 +728,71 @@ def editar_momento():
     db.session.commit()
 
     return redirect(url_for('profile'))
+FILTROS_HISTORICO = {
+    'todos': 'Todos',
+    'este_mes': 'Este mês',
+    'ultimos_meses': 'Últimos 3 meses',
+}
+
+
+def _inicio_do_periodo(filtro, agora):
+    """Data mínima dos momentos para o filtro escolhido (None = sem limite)."""
+    if filtro == 'este_mes':
+        return agora.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    if filtro == 'ultimos_meses':
+        return agora - timedelta(days=90)
+    return None
+
+
+def _anexar_humor_da_epoca(usuario_id, registros):
+    """Define registro.sentindo com o humor vigente na data de cada momento.
+    Faz uma única consulta e usa busca binária, em vez de uma consulta por
+    registro."""
+    if not registros:
+        return
+
+    humores = (db.session.query(Humor.data, Humor.tipo)
+               .filter(Humor.usuario_id == usuario_id)
+               .order_by(Humor.data.asc())
+               .all())
+    datas = [h.data for h in humores]
+
+    for registro in registros:
+        posicao = bisect_right(datas, registro.data) if registro.data else 0
+        registro.sentindo = humores[posicao - 1].tipo if posicao else None
+
+
 @app.route('/momento/historico')
 @login_required
 def momento_historico():
-    """Histórico completo dos momentos do usuário, com filtros de
-    período ('todos', 'este_mes', 'ultimos_meses'), usado pela página de
-    recapitulação ('Recapitule aqui os seus momentos')."""
+    """Histórico completo dos momentos do usuário ('Recapitule aqui os seus
+    momentos'), com filtro por período."""
     filtro = request.args.get('filtro', 'todos').strip().lower()
+    if filtro not in FILTROS_HISTORICO:
+        filtro = 'todos'
 
     query = db.session.query(Momento).filter_by(usuario_id=current_user.id)
 
-    agora = datetime.utcnow()
-    if filtro == 'este_mes':
-        inicio_do_mes = agora.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-        query = query.filter(Momento.data >= inicio_do_mes)
-    elif filtro == 'ultimos_meses':
-        limite = agora - timedelta(days=90)
-        query = query.filter(Momento.data >= limite)
-    else:
-        filtro = 'todos'
+    inicio = _inicio_do_periodo(filtro, datetime.utcnow())
+    if inicio:
+        query = query.filter(Momento.data >= inicio)
 
     registros = query.order_by(Momento.data.desc()).all()
 
-    for registro in registros:
-        humor_na_epoca = (db.session.query(Humor)
-                          .filter(Humor.usuario_id == current_user.id,
-                                  Humor.data <= registro.data)
-                          .order_by(Humor.data.desc())
-                          .first())
-        registro.sentindo = humor_na_epoca.tipo if humor_na_epoca else None
+    _anexar_humor_da_epoca(current_user.id, registros)
 
-    return render_template('momento_historico.html', registros=registros, filtro=filtro)
+    for registro in registros:
+        registro.data_formatada = (
+            registro.data.strftime('%d/%m/%Y, às %H:%M') if registro.data else ''
+        )
+
+    return render_template(
+        'momento_historico.html',
+        registros=registros,
+        filtro=filtro,
+        filtros=FILTROS_HISTORICO,
+        total=len(registros),
+    )
 
 
 if __name__ == '__main__':
