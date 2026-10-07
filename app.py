@@ -708,7 +708,6 @@ def editar_momento():
             'Selecione uma atmosfera válida.'
         )
 
-    # SE TIVER ERRO, VOLTA PARA O FORMULÁRIO
     if erros:
 
         return render_template(
@@ -718,8 +717,7 @@ def editar_momento():
             **erros
         )
 
-    # ATUALIZA O MOMENTO EXISTENTE
-
+    
     momento.ouvindo = ouvindo
     momento.lendo = lendo
     momento.frase_inicio = frase_inicio
