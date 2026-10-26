@@ -1,11 +1,12 @@
 from flask import Flask, render_template, request, redirect, url_for, jsonify
 from flask_login import LoginManager, login_user, login_required, logout_user, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
+from sqlalchemy.exc import IntegrityError
 from db import db
 import os
 from werkzeug.utils import secure_filename
 import re
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date, timezone
 from bisect import bisect_right
 from math import ceil
 
@@ -14,10 +15,18 @@ app.secret_key = os.environ.get('SECRET_KEY', 'dev-key-virtual-life-2026')
 app.config['SQLALCHEMY_DATABASE_URI'] = "sqlite:///database.db"
 db.init_app(app)
 
-from models import Usuario, Humor, Vibe, Favorito, Momento
+from models import Usuario, Humor, Vibe, Favorito, Momento, Rotina, RotinaConclusao
 
 lm = LoginManager(app)
 lm.login_view = 'login'
+
+
+@lm.unauthorized_handler
+def nao_autorizado():
+    """Páginas redirecionam para o login; a API (/api/...) responde JSON 401."""
+    if request.path.startswith('/api/'):
+        return jsonify({'erro': 'Autenticação necessária.'}), 401
+    return redirect(url_for('login'))
 
 with app.app_context():
     db.create_all()
@@ -58,7 +67,6 @@ def login():
     return redirect(url_for('profile'))
 
 
-
 @app.route('/registrar', methods=['POST', 'GET'])
 def registrar():
     if request.method == "GET":
@@ -71,7 +79,6 @@ def registrar():
 
     erros = {}
 
-    
     if not email:
         erros['erro_email'] = 'O e-mail é obrigatório.'
     elif not re.match(r'^[^@\s]+@[^@\s]+\.[^@\s]+$', email):
@@ -79,13 +86,11 @@ def registrar():
     elif db.session.query(Usuario).filter_by(email=email).first():
         erros['erro_email'] = 'Este e-mail já está cadastrado.'
 
-    # VALIDAÇÃO DO NOME
     if not nome:
         erros['erro_nome'] = 'O nome é obrigatório.'
     elif db.session.query(Usuario).filter_by(nome=nome).first():
         erros['erro_nome'] = 'Este nome de usuário já está em uso.'
 
-    # VALIDAÇÃO DA SENHA
     if not senha:
         erros['erro_senha'] = 'A senha é obrigatória.'
     elif len(senha) < 6:
@@ -97,7 +102,6 @@ def registrar():
     elif not re.search(r'[^a-zA-Z0-9]', senha):
         erros['erro_senha'] = 'A senha deve ter pelo menos um caractere especial.'
 
-    # CONFIRMAÇÃO
     if not confirma:
         erros['erro_confirma'] = 'Confirme sua senha.'
     elif senha != confirma:
@@ -808,6 +812,369 @@ def momento_historico():
         total_paginas=total_paginas,
         total=total,
     )
+
+
+PERIODOS_ROTINA = ['manhã', 'tarde', 'noite', 'qualquer']
+DIAS_SEMANA_ROTINA = [0, 1, 2, 3, 4, 5, 6]          # 0 = segunda ... 6 = domingo
+RE_HORARIO = re.compile(r'^([01]\d|2[0-3]):[0-5]\d$')
+
+
+FUSO_LOCAL = timezone(timedelta(hours=float(os.environ.get('FUSO_HORARIO_UTC', '-3'))))
+
+
+def _hoje_local():
+    return datetime.now(timezone.utc).astimezone(FUSO_LOCAL).date()
+
+
+def _data_local(dt):
+    """Converte um datetime UTC 'ingênuo' (como salvo no banco) para a data local."""
+    return dt.replace(tzinfo=timezone.utc).astimezone(FUSO_LOCAL).date()
+
+
+def _parse_data(valor):
+    """'YYYY-MM-DD' -> date. Vazio/None -> hoje. Formato inválido -> ValueError."""
+    if valor is None or str(valor).strip() == '':
+        return _hoje_local()
+    return date.fromisoformat(str(valor).strip())
+
+
+def _dados_requisicao():
+    """Aceita corpo JSON ou formulário HTML."""
+    dados = request.get_json(silent=True)
+    if isinstance(dados, dict):
+        return dados
+    dados = request.form.to_dict()
+    if 'dias_semana' in request.form:
+        dados['dias_semana'] = request.form.getlist('dias_semana')
+    return dados
+
+
+def _validar_rotina(dados, criando):
+    """Valida os campos enviados. Retorna (campos_limpos, erros).
+    Na edição (criando=False) só os campos presentes em `dados` são validados."""
+    limpos, erros = {}, {}
+
+    if criando or 'titulo' in dados:
+        titulo = str(dados.get('titulo') or '').strip()
+        if not titulo:
+            erros['titulo'] = 'O título é obrigatório.'
+        elif len(titulo) > 100:
+            erros['titulo'] = 'O título deve ter no máximo 100 caracteres.'
+        else:
+            limpos['titulo'] = titulo
+
+    if 'descricao' in dados:
+        descricao = str(dados.get('descricao') or '').strip()
+        if len(descricao) > 300:
+            erros['descricao'] = 'A descrição deve ter no máximo 300 caracteres.'
+        else:
+            limpos['descricao'] = descricao or None
+
+    if criando or 'periodo' in dados:
+        periodo = str(dados.get('periodo') or 'qualquer').strip().lower()
+        if periodo == 'manha':
+            periodo = 'manhã'
+        if periodo not in PERIODOS_ROTINA:
+            erros['periodo'] = 'Período inválido. Use: ' + ', '.join(PERIODOS_ROTINA) + '.'
+        else:
+            limpos['periodo'] = periodo
+
+    if 'horario' in dados:
+        horario = str(dados.get('horario') or '').strip()
+        if horario and not RE_HORARIO.match(horario):
+            erros['horario'] = 'Horário inválido. Use o formato HH:MM (24h).'
+        else:
+            limpos['horario'] = horario or None
+
+    if criando or 'dias_semana' in dados:
+        bruto = dados.get('dias_semana')
+        if bruto is None or bruto == '' or bruto == []:
+            bruto = DIAS_SEMANA_ROTINA if criando else None
+        if isinstance(bruto, str):
+            bruto = [p for p in bruto.split(',') if p.strip() != '']
+        if bruto is None:
+            erros['dias_semana'] = 'Escolha ao menos um dia da semana.'
+        else:
+            try:
+                if any(isinstance(d, bool) for d in bruto):
+                    raise ValueError
+                dias = sorted({int(d) for d in bruto})
+                if not dias or any(d not in DIAS_SEMANA_ROTINA for d in dias):
+                    raise ValueError
+                limpos['dias_semana'] = ','.join(str(d) for d in dias)
+            except (TypeError, ValueError):
+                erros['dias_semana'] = ('Dias da semana inválidos. Use números de '
+                                        '0 (segunda) a 6 (domingo).')
+
+    if 'ativa' in dados:
+        ativa = dados.get('ativa')
+        if isinstance(ativa, str):
+            ativa = {'true': True, '1': True, 'on': True,
+                     'false': False, '0': False, 'off': False}.get(ativa.strip().lower())
+        if not isinstance(ativa, bool):
+            erros['ativa'] = 'O campo "ativa" deve ser true ou false.'
+        else:
+            limpos['ativa'] = ativa
+
+    return limpos, erros
+
+
+def _rotina_dict(rotina, concluida=None):
+    info = {
+        'id': rotina.id,
+        'titulo': rotina.titulo,
+        'descricao': rotina.descricao,
+        'periodo': rotina.periodo,
+        'horario': rotina.horario,
+        'dias_semana': rotina.dias_lista(),
+        'ativa': rotina.ativa,
+        'criada_em': rotina.data.isoformat() if rotina.data else None,
+        'atualizada_em': rotina.atualizado_em.isoformat() if rotina.atualizado_em else None,
+    }
+    if concluida is not None:
+        info['concluida'] = concluida
+    return info
+
+
+def _ordenar_rotinas(rotinas):
+    """Manhã -> tarde -> noite -> qualquer; dentro do período, por horário."""
+    return sorted(rotinas, key=lambda r: (
+        PERIODOS_ROTINA.index(r.periodo) if r.periodo in PERIODOS_ROTINA else 99,
+        r.horario or '99:99',
+        r.id))
+
+
+def _buscar_rotina(rotina_id):
+    """Rotina do usuário logado, ou None (também None se for de outro usuário)."""
+    rotina = db.session.get(Rotina, rotina_id)
+    if not rotina or rotina.usuario_id != current_user.id:
+        return None
+    return rotina
+
+
+def _ids_concluidos(usuario_id, dia):
+    linhas = (db.session.query(RotinaConclusao.rotina_id)
+              .join(Rotina, Rotina.id == RotinaConclusao.rotina_id)
+              .filter(Rotina.usuario_id == usuario_id,
+                      RotinaConclusao.data_conclusao == dia)
+              .all())
+    return {linha[0] for linha in linhas}
+
+
+def _progresso_do_dia(usuario_id, dia):
+    """Totais do dia considerando só rotinas ativas agendadas para ele."""
+    agendadas = [r for r in db.session.query(Rotina)
+                 .filter_by(usuario_id=usuario_id, ativa=True).all()
+                 if r.agendada_para(dia)]
+    feitas = _ids_concluidos(usuario_id, dia)
+    total = len(agendadas)
+    concluidas = sum(1 for r in agendadas if r.id in feitas)
+    return {
+        'total': total,
+        'concluidas': concluidas,
+        'percentual': round(100 * concluidas / total) if total else 0,
+    }
+
+
+def _erro_rotina_nao_encontrada():
+    return jsonify({'erro': 'Rotina não encontrada.'}), 404
+
+
+def _erro_data_invalida():
+    return jsonify({'erro': 'Data inválida. Use o formato AAAA-MM-DD.'}), 400
+
+
+@app.route('/api/rotinas', methods=['GET'])
+@login_required
+def listar_rotinas():
+    """Rotinas do usuário para um dia (padrão: hoje), já com o status de
+    conclusão e o progresso do dia.
+
+    Parâmetros de URL (opcionais):
+      dia    -> AAAA-MM-DD (padrão: hoje)
+      todas  -> 1 para listar também rotinas inativas e de outros dias da
+                semana (tela de gerenciamento); padrão: só as do dia.
+    """
+    try:
+        dia = _parse_data(request.args.get('dia'))
+    except ValueError:
+        return _erro_data_invalida()
+
+    todas = request.args.get('todas', '').strip().lower() in ('1', 'true', 'sim')
+
+    rotinas = db.session.query(Rotina).filter_by(usuario_id=current_user.id).all()
+    if not todas:
+        rotinas = [r for r in rotinas if r.ativa and r.agendada_para(dia)]
+
+    feitas = _ids_concluidos(current_user.id, dia)
+
+    return jsonify({
+        'dia': dia.isoformat(),
+        'rotinas': [_rotina_dict(r, r.id in feitas) for r in _ordenar_rotinas(rotinas)],
+        'progresso': _progresso_do_dia(current_user.id, dia),
+    }), 200
+
+
+@app.route('/api/rotinas', methods=['POST'])
+@login_required
+def criar_rotina():
+    campos, erros = _validar_rotina(_dados_requisicao(), criando=True)
+    if erros:
+        return jsonify({'erro': 'Dados inválidos.', 'erros': erros}), 400
+
+    rotina = Rotina(usuario_id=current_user.id, **campos)
+    db.session.add(rotina)
+    db.session.commit()
+    return jsonify({'mensagem': 'Rotina criada com sucesso.',
+                    'rotina': _rotina_dict(rotina, False)}), 201
+
+
+@app.route('/api/rotinas/<int:rotina_id>', methods=['GET'])
+@login_required
+def detalhar_rotina(rotina_id):
+    rotina = _buscar_rotina(rotina_id)
+    if not rotina:
+        return _erro_rotina_nao_encontrada()
+    feita = rotina.id in _ids_concluidos(current_user.id, _hoje_local())
+    return jsonify({'rotina': _rotina_dict(rotina, feita)}), 200
+
+
+@app.route('/api/rotinas/<int:rotina_id>', methods=['PUT', 'PATCH'])
+@login_required
+def editar_rotina(rotina_id):
+    rotina = _buscar_rotina(rotina_id)
+    if not rotina:
+        return _erro_rotina_nao_encontrada()
+
+    campos, erros = _validar_rotina(_dados_requisicao(), criando=False)
+    if erros:
+        return jsonify({'erro': 'Dados inválidos.', 'erros': erros}), 400
+
+    for nome, valor in campos.items():
+        setattr(rotina, nome, valor)
+    db.session.commit()
+
+    feita = rotina.id in _ids_concluidos(current_user.id, _hoje_local())
+    return jsonify({'mensagem': 'Rotina atualizada com sucesso.',
+                    'rotina': _rotina_dict(rotina, feita)}), 200
+
+
+@app.route('/api/rotinas/<int:rotina_id>', methods=['DELETE'])
+@login_required
+def deletar_rotina(rotina_id):
+    rotina = _buscar_rotina(rotina_id)
+    if not rotina:
+        return _erro_rotina_nao_encontrada()
+    db.session.delete(rotina)          # apaga junto o histórico de conclusões
+    db.session.commit()
+    return jsonify({'mensagem': 'Rotina removida com sucesso.'}), 200
+
+
+@app.route('/api/rotinas/<int:rotina_id>/concluir', methods=['POST'])
+@login_required
+def concluir_rotina(rotina_id):
+    """Marca a rotina como concluída em um dia (padrão: hoje).
+    Corpo opcional: {"data": "AAAA-MM-DD"}. É idempotente."""
+    rotina = _buscar_rotina(rotina_id)
+    if not rotina:
+        return _erro_rotina_nao_encontrada()
+
+    dados = _dados_requisicao()
+    try:
+        dia = _parse_data(dados.get('data', request.args.get('data')))
+    except ValueError:
+        return _erro_data_invalida()
+
+    if dia > _hoje_local():
+        return jsonify({'erro': 'Não é possível concluir uma rotina em uma data futura.'}), 400
+    if not rotina.ativa:
+        return jsonify({'erro': 'Esta rotina está desativada.'}), 400
+    if not rotina.agendada_para(dia):
+        return jsonify({'erro': 'Esta rotina não está agendada para esse dia da semana.'}), 400
+
+    ja_existe = (db.session.query(RotinaConclusao)
+                 .filter_by(rotina_id=rotina.id, data_conclusao=dia).first())
+    status = 200
+    if not ja_existe:
+        db.session.add(RotinaConclusao(rotina_id=rotina.id, data_conclusao=dia))
+        try:
+            db.session.commit()
+            status = 201
+        except IntegrityError:         # duas requisições simultâneas: já foi registrada
+            db.session.rollback()
+
+    return jsonify({
+        'rotina': _rotina_dict(rotina, True),
+        'dia': dia.isoformat(),
+        'progresso': _progresso_do_dia(current_user.id, dia),
+    }), status
+
+
+@app.route('/api/rotinas/<int:rotina_id>/concluir', methods=['DELETE'])
+@login_required
+def desmarcar_rotina(rotina_id):
+    """Desfaz a conclusão da rotina em um dia (?data=AAAA-MM-DD, padrão hoje)."""
+    rotina = _buscar_rotina(rotina_id)
+    if not rotina:
+        return _erro_rotina_nao_encontrada()
+
+    try:
+        dia = _parse_data(request.args.get('data'))
+    except ValueError:
+        return _erro_data_invalida()
+
+    (db.session.query(RotinaConclusao)
+     .filter_by(rotina_id=rotina.id, data_conclusao=dia)
+     .delete())
+    db.session.commit()
+
+    return jsonify({
+        'rotina': _rotina_dict(rotina, False),
+        'dia': dia.isoformat(),
+        'progresso': _progresso_do_dia(current_user.id, dia),
+    }), 200
+
+
+@app.route('/api/rotinas/resumo', methods=['GET'])
+@login_required
+def resumo_rotinas():
+    """Progresso dia a dia dos últimos N dias (?dias=7, de 1 a 31).
+    Para cada dia só contam as rotinas ativas, agendadas para aquele dia da
+    semana e já criadas até aquela data."""
+    dias = request.args.get('dias', 7, type=int)
+    dias = max(1, min(dias or 7, 31))
+
+    hoje = _hoje_local()
+    inicio = hoje - timedelta(days=dias - 1)
+
+    rotinas = (db.session.query(Rotina)
+               .filter_by(usuario_id=current_user.id, ativa=True).all())
+
+    feitas = {(c.rotina_id, c.data_conclusao)
+              for c in (db.session.query(RotinaConclusao)
+                        .join(Rotina, Rotina.id == RotinaConclusao.rotina_id)
+                        .filter(Rotina.usuario_id == current_user.id,
+                                RotinaConclusao.data_conclusao >= inicio,
+                                RotinaConclusao.data_conclusao <= hoje)
+                        .all())}
+
+    resumo = []
+    for i in range(dias):
+        dia = inicio + timedelta(days=i)
+        previstas = [r for r in rotinas
+                     if r.agendada_para(dia) and _data_local(r.data) <= dia]
+        concluidas = sum(1 for r in previstas if (r.id, dia) in feitas)
+        total = len(previstas)
+        resumo.append({
+            'dia': dia.isoformat(),
+            'dia_semana': dia.weekday(),
+            'total': total,
+            'concluidas': concluidas,
+            'percentual': round(100 * concluidas / total) if total else 0,
+        })
+
+    return jsonify({'inicio': inicio.isoformat(), 'fim': hoje.isoformat(),
+                    'dias': resumo}), 200
 
 
 if __name__ == '__main__':
