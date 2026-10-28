@@ -294,6 +294,15 @@ body{
    SEUS MOMENTOS - CARD NO PERFIL
    ========================================= */
 
+.momento-section {
+    margin-top: 30px;
+    padding: 40px;
+    border-radius: 35px;
+    background: rgba(255,255,255,.04);
+    width: 100%;
+    box-sizing: border-box;
+}
+
 .momento-profile-card {
     margin-top: 25px;
     text-align: center;
