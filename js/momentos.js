@@ -316,7 +316,7 @@ document.addEventListener("DOMContentLoaded", function () {
             // ---------------------------------------------
 
 
-        fetch("/momento", {
+        fetch("/momentos", {
     method: "POST",
     body: dados
 })
@@ -662,3 +662,785 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 console.log("MOMENTOS.JS FOI CARREGADO");
 });
+
+
+(() => {
+    "use strict";
+
+    const HISTORY_SELECTOR = "#historico-momentos";
+
+    const CATEGORY_CONFIG = {
+        sentindo: {
+            label: "Sentindo",
+            icon: "♡",
+            className: "historico-item--sentindo"
+        },
+        ouvindo: {
+            label: "Ouvindo",
+            icon: "♪",
+            className: "historico-item--ouvindo"
+        },
+        lendo: {
+            label: "Lendo",
+            icon: "◇",
+            className: "historico-item--lendo"
+        },
+        pensamento: {
+            label: "Minha mente está em...",
+            icon: "✦",
+            className: "historico-item--pensamento"
+        },
+        clima: {
+            label: "Clima do momento",
+            icon: "☾",
+            className: "historico-item--clima"
+        }
+    };
+
+    const state = {
+        registros: [],
+        carregando: false,
+        erro: false,
+        periodo: "todos",
+        categoria: "todas",
+        busca: "",
+        inicializado: false
+    };
+
+    let root = null;
+    let searchTimer = null;
+
+    function getElements() {
+        if (!root) return {};
+
+        return {
+            lista: root.querySelector("#historico-lista"),
+            registros: root.querySelector("#historico-registros"),
+            contador: root.querySelector("[data-historico-total]"),
+
+            vazio: root.querySelector("#historico-vazio"),
+            carregando: root.querySelector("#historico-carregando"),
+            erro: root.querySelector("#historico-erro"),
+            semResultados: root.querySelector(
+                "#historico-sem-resultados"
+            ),
+
+            filtroPeriodo: root.querySelector(
+                '[data-historico-filtro="periodo"]'
+            ),
+
+            filtroCategoria: root.querySelector(
+                '[data-historico-filtro="categoria"]'
+            ),
+
+            busca: root.querySelector("[data-historico-busca]"),
+
+            botaoTentarNovamente: root.querySelector(
+                "[data-historico-tentar-novamente]"
+            ),
+
+            botaoLimparFiltros: root.querySelector(
+                "[data-historico-limpar-filtros]"
+            )
+        };
+    }
+
+    function escapeHTML(value) {
+        return String(value ?? "").replace(
+            /[&<>"']/g,
+            character => ({
+                "&": "&amp;",
+                "<": "&lt;",
+                ">": "&gt;",
+                '"': "&quot;",
+                "'": "&#39;"
+            })[character]
+        );
+    }
+
+    function normalizeText(value) {
+        return String(value ?? "")
+            .normalize("NFD")
+            .replace(/[\u0300-\u036f]/g, "")
+            .toLocaleLowerCase("pt-BR")
+            .trim();
+    }
+
+    function parseDate(value) {
+        if (!value) return null;
+
+        const date = value instanceof Date
+            ? new Date(value.getTime())
+            : new Date(value);
+
+        return Number.isNaN(date.getTime()) ? null : date;
+    }
+
+    function formatDate(value) {
+        const date = parseDate(value);
+
+        if (!date) return "Data não informada";
+
+        return new Intl.DateTimeFormat("pt-BR", {
+            day: "2-digit",
+            month: "long",
+            year: "numeric"
+        }).format(date);
+    }
+
+    function formatTime(value) {
+        const date = parseDate(value);
+
+        if (!date) return "";
+
+        return new Intl.DateTimeFormat("pt-BR", {
+            hour: "2-digit",
+            minute: "2-digit"
+        }).format(date);
+    }
+
+    function formatDateTime(value) {
+        const date = parseDate(value);
+
+        if (!date) return "Horário não informado";
+
+        return `${formatDate(date)} · ${formatTime(date)}`;
+    }
+
+    function formatRelativeDate(value) {
+        const date = parseDate(value);
+
+        if (!date) return "";
+
+        const now = new Date();
+        const difference = now.getTime() - date.getTime();
+        const days = Math.floor(difference / 86400000);
+
+        if (difference < 0) {
+            return formatDateTime(date);
+        }
+
+        if (days === 0) {
+            return `Hoje, às ${formatTime(date)}`;
+        }
+
+        if (days === 1) {
+            return `Ontem, às ${formatTime(date)}`;
+        }
+
+        if (days < 7) {
+            return `Há ${days} dias`;
+        }
+
+        return formatDateTime(date);
+    }
+
+    function normalizeRecord(record, index) {
+        const source = record && typeof record === "object"
+            ? record
+            : {};
+
+        const mood = source.humor &&
+            typeof source.humor === "object"
+            ? source.humor
+            : {};
+
+        return {
+            id: String(source.id ?? source.uuid ?? `registro-${index}`),
+
+            data: parseDate(
+                source.data_criacao ??
+                source.created_at ??
+                source.data ??
+                source.timestamp
+            ),
+
+            sentindo: String(
+                mood.nome ??
+                source.sentindo ??
+                source.humor_nome ??
+                ""
+            ).trim(),
+
+            emojiHumor: String(
+                mood.emoji ??
+                source.humor_emoji ??
+                ""
+            ).trim(),
+
+            ouvindo: String(
+                source.ouvindo ??
+                source.artista ??
+                ""
+            ).trim(),
+
+            lendo: String(
+                source.lendo ??
+                source.livro ??
+                ""
+            ).trim(),
+
+            fraseInicio: String(
+                source.frase_inicio ??
+                source.fraseInicio ??
+                source.frase ??
+                ""
+            ).trim(),
+
+            pensamento: String(
+                source.pensamento ??
+                source.frase_complemento ??
+                source.texto_pensamento ??
+                ""
+            ).trim(),
+
+            clima: String(
+                source.clima ??
+                source.atmosfera ??
+                ""
+            ).trim(),
+
+            detalhes: String(
+                source.detalhes ??
+                source.observacao ??
+                ""
+            ).trim()
+        };
+    }
+
+    function setVisible(element, visible) {
+        if (element) {
+            element.hidden = !visible;
+        }
+    }
+
+    function updateCounter(count) {
+        const elements = getElements();
+
+        if (!elements.contador) return;
+
+        elements.contador.textContent =
+            `${count} ${count === 1 ? "registro" : "registros"}`;
+    }
+
+    function isInSelectedPeriod(record) {
+        if (state.periodo === "todos") return true;
+        if (!record.data) return false;
+
+        const now = new Date();
+        const date = record.data;
+
+        if (state.periodo === "mes") {
+            return (
+                date.getFullYear() === now.getFullYear() &&
+                date.getMonth() === now.getMonth()
+            );
+        }
+
+        if (state.periodo === "ano") {
+            return date.getFullYear() === now.getFullYear();
+        }
+
+        return true;
+    }
+
+    function getCategoryValue(record, category) {
+        switch (category) {
+            case "sentindo":
+                return [record.sentindo, record.emojiHumor].join(" ");
+
+            case "ouvindo":
+                return record.ouvindo;
+
+            case "lendo":
+                return record.lendo;
+
+            case "pensamento":
+                return [record.fraseInicio, record.pensamento].join(" ");
+
+            case "clima":
+                return record.clima;
+
+            default:
+                return "";
+        }
+    }
+
+    function matchesCategory(record) {
+        if (state.categoria === "todas") return true;
+
+        return Boolean(
+            getCategoryValue(record, state.categoria).trim()
+        );
+    }
+
+    function matchesSearch(record) {
+        if (!state.busca) return true;
+
+        const searchableText = normalizeText([
+            record.sentindo,
+            record.emojiHumor,
+            record.ouvindo,
+            record.lendo,
+            record.fraseInicio,
+            record.pensamento,
+            record.clima,
+            record.detalhes,
+            formatDate(record.data)
+        ].join(" "));
+
+        return searchableText.includes(normalizeText(state.busca));
+    }
+
+    function getFilteredRecords() {
+        return state.registros
+            .filter(isInSelectedPeriod)
+            .filter(matchesCategory)
+            .filter(matchesSearch)
+            .sort((a, b) => {
+                const dateA = a.data?.getTime() ?? 0;
+                const dateB = b.data?.getTime() ?? 0;
+
+                return dateB - dateA;
+            });
+    }
+
+    function renderItem(category, value) {
+        const config = CATEGORY_CONFIG[category];
+
+        if (!config || !String(value ?? "").trim()) {
+            return "";
+        }
+
+        return `
+            <div class="historico-item ${config.className}">
+                <div class="historico-item-label">
+                    <span class="historico-item-icon" aria-hidden="true">
+                        ${config.icon}
+                    </span>
+                    <span>${config.label}</span>
+                </div>
+
+                <div class="historico-item-value">
+                    ${escapeHTML(value)}
+                </div>
+            </div>
+        `;
+    }
+
+    function renderCard(record, index) {
+        const safeId = `historico-detalhes-${index}`;
+
+        const dateLabel = record.data
+            ? formatDate(record.data)
+            : "Data não informada";
+
+        const timeLabel = record.data
+            ? formatTime(record.data)
+            : "";
+
+        const moodLabel = [
+            record.emojiHumor,
+            record.sentindo
+        ].filter(Boolean).join(" ");
+
+        const thoughtLabel = [
+            record.fraseInicio,
+            record.pensamento
+        ].filter(Boolean).join(" ");
+
+
+        const todosOsItens = {
+            sentindo: renderItem("sentindo", moodLabel),
+            ouvindo: renderItem("ouvindo", record.ouvindo),
+            lendo: renderItem("lendo", record.lendo),
+            pensamento: renderItem("pensamento", thoughtLabel),
+            clima: renderItem("clima", record.clima)
+        };
+
+        const items = state.categoria === "todas"
+            ? Object.values(todosOsItens).filter(Boolean).join("")
+            : todosOsItens[state.categoria] || "";
+
+
+        const details = record.detalhes
+            ? `
+                <div
+                    class="historico-card-details"
+                    id="${safeId}"
+                    hidden
+                >
+                    <h3>Um pouco mais sobre esse momento</h3>
+                    <p>${escapeHTML(record.detalhes)}</p>
+                </div>
+            `
+            : "";
+
+        const expandButton = record.detalhes
+            ? `
+                <button
+                    type="button"
+                    class="historico-expand-button"
+                    aria-expanded="false"
+                    aria-controls="${safeId}"
+                    data-historico-expandir
+                >
+                    Ver mais
+                    <span aria-hidden="true">⌄</span>
+                </button>
+            `
+            : "";
+
+
+        return `
+            <article
+                class="historico-card"
+                data-historico-card
+                data-registro-id="${escapeHTML(record.id)}"
+            >
+                <header class="historico-card-header">
+                    <div class="historico-card-date">
+                        <strong>${escapeHTML(dateLabel)}</strong>
+                        <span>${escapeHTML(timeLabel)}</span>
+                    </div>
+
+                    <span
+                        class="historico-card-decoration"
+                        aria-hidden="true"
+                    >✧</span>
+                </header>
+
+                <div class="historico-card-content">
+                    ${items || `
+                        <div class="historico-item">
+                            <div class="historico-item-value">
+                                Este registro não possui detalhes disponíveis.
+                            </div>
+                        </div>
+                    `}
+                </div>
+
+                ${details}
+
+
+                <footer class="historico-card-footer">
+                    <span class="historico-card-updated">
+                        ${escapeHTML(formatRelativeDate(record.data))}
+                    </span>
+
+                    ${expandButton}
+                </footer>
+
+            </article>
+        `;
+    }
+
+    function getDateGroupKey(date) {
+        if (!date) return "sem-data";
+
+        return [
+            date.getFullYear(),
+            String(date.getMonth() + 1).padStart(2, "0"),
+            String(date.getDate()).padStart(2, "0")
+        ].join("-");
+    }
+
+    function getDateGroupLabel(date) {
+        if (!date) return "Data não informada";
+
+        const now = new Date();
+
+        const sameDay =
+            date.getFullYear() === now.getFullYear() &&
+            date.getMonth() === now.getMonth() &&
+            date.getDate() === now.getDate();
+
+        if (sameDay) return "HOJE";
+
+        const yesterday = new Date(now);
+        yesterday.setDate(now.getDate() - 1);
+
+        const isYesterday =
+            date.getFullYear() === yesterday.getFullYear() &&
+            date.getMonth() === yesterday.getMonth() &&
+            date.getDate() === yesterday.getDate();
+
+        if (isYesterday) return "ONTEM";
+
+        return formatDate(date).toLocaleUpperCase("pt-BR");
+    }
+
+    function renderTimeline(records) {
+        const elements = getElements();
+
+        if (!elements.registros) return;
+
+        const groups = new Map();
+
+        records.forEach(record => {
+            const key = getDateGroupKey(record.data);
+
+            if (!groups.has(key)) {
+                groups.set(key, {
+                    label: getDateGroupLabel(record.data),
+                    records: []
+                });
+            }
+
+            groups.get(key).records.push(record);
+        });
+
+        let html = "";
+        let index = 0;
+
+        groups.forEach(group => {
+            html += `
+                <div class="historico-date-group">
+                    ${escapeHTML(group.label)}
+                </div>
+            `;
+
+            group.records.forEach(record => {
+                html += renderCard(record, index);
+                index += 1;
+            });
+        });
+
+        elements.registros.innerHTML = html;
+    }
+
+    function render() {
+        if (!root || state.carregando || state.erro) return;
+
+        const elements = getElements();
+        const filteredRecords = getFilteredRecords();
+
+        updateCounter(state.registros.length);
+
+        const hasRecords = state.registros.length > 0;
+        const hasResults = filteredRecords.length > 0;
+
+        setVisible(elements.carregando, false);
+        setVisible(elements.erro, false);
+        setVisible(elements.vazio, !hasRecords);
+
+        setVisible(
+            elements.semResultados,
+            hasRecords && !hasResults
+        );
+
+        setVisible(elements.lista, hasResults);
+
+        if (hasResults) {
+            renderTimeline(filteredRecords);
+        } else if (elements.registros) {
+            elements.registros.innerHTML = "";
+        }
+    }
+
+    function syncFilters() {
+        const elements = getElements();
+
+        state.periodo = elements.filtroPeriodo?.value ?? "todos";
+        state.categoria = elements.filtroCategoria?.value ?? "todas";
+        state.busca = elements.busca?.value ?? "";
+
+        render();
+    }
+
+    function clearFilters() {
+        const elements = getElements();
+
+        if (elements.filtroPeriodo) {
+            elements.filtroPeriodo.value = "todos";
+        }
+
+        if (elements.filtroCategoria) {
+            elements.filtroCategoria.value = "todas";
+        }
+
+        if (elements.busca) {
+            elements.busca.value = "";
+        }
+
+        state.periodo = "todos";
+        state.categoria = "todas";
+        state.busca = "";
+
+        render();
+    }
+
+    function handleExpandClick(event) {
+        const button = event.target.closest(
+            "[data-historico-expandir]"
+        );
+
+        if (!button || !root.contains(button)) return;
+
+        const targetId = button.getAttribute("aria-controls");
+        const details = targetId
+            ? document.getElementById(targetId)
+            : null;
+
+        if (!details) return;
+
+        const expanded =
+            button.getAttribute("aria-expanded") === "true";
+
+        button.setAttribute("aria-expanded", String(!expanded));
+        details.hidden = expanded;
+
+        button.innerHTML = expanded
+            ? 'Ver mais <span aria-hidden="true">⌄</span>'
+            : 'Ver menos <span aria-hidden="true">⌃</span>';
+    }
+
+
+    function handleBackClick(event) {
+        const link = event.target.closest("[data-historico-voltar]");
+
+        if (!link || !root.contains(link)) return;
+
+        const targetUrl = root.dataset.historicoUrlAtual;
+
+        if (targetUrl) {
+            event.preventDefault();
+            window.location.href = targetUrl;
+        }
+    }
+
+    function bindEvents() {
+        const elements = getElements();
+
+        elements.filtroPeriodo?.addEventListener("change", syncFilters);
+        elements.filtroCategoria?.addEventListener("change", syncFilters);
+
+        elements.busca?.addEventListener("input", () => {
+            window.clearTimeout(searchTimer);
+
+            searchTimer = window.setTimeout(syncFilters, 120);
+        });
+
+        elements.botaoLimparFiltros?.addEventListener(
+            "click",
+            clearFilters
+        );
+
+        root.addEventListener("click", handleExpandClick);
+        //root.addEventListener("click", handleDeleteClick);
+        root.addEventListener("click", handleBackClick);
+
+        elements.botaoTentarNovamente?.addEventListener("click", () => {
+            // Os dados já estão na página; não é necessário consultar
+            // novamente o banco apenas para reconstruir a lista.
+            state.erro = false;
+            render();
+        });
+    }
+
+    function definirRegistros(records) {
+        if (!Array.isArray(records)) {
+            throw new TypeError(
+                "O histórico precisa receber uma lista de registros."
+            );
+        }
+
+        state.registros = records.map(normalizeRecord);
+        state.carregando = false;
+        state.erro = false;
+
+        render();
+    }
+
+    function definirCarregamento(loading) {
+        state.carregando = Boolean(loading);
+
+        const elements = getElements();
+
+        setVisible(elements.carregando, state.carregando);
+
+        if (state.carregando) {
+            setVisible(elements.lista, false);
+            setVisible(elements.vazio, false);
+            setVisible(elements.erro, false);
+            setVisible(elements.semResultados, false);
+        } else {
+            render();
+        }
+    }
+
+    function definirErro(hasError) {
+        state.erro = Boolean(hasError);
+
+        const elements = getElements();
+
+        setVisible(elements.erro, state.erro);
+
+        if (state.erro) {
+            setVisible(elements.carregando, false);
+            setVisible(elements.lista, false);
+            setVisible(elements.vazio, false);
+            setVisible(elements.semResultados, false);
+        } else {
+            render();
+        }
+    }
+
+    function obterEstado() {
+        return {
+            quantidade: state.registros.length,
+            carregando: state.carregando,
+            erro: state.erro,
+            periodo: state.periodo,
+            categoria: state.categoria,
+            busca: state.busca
+        };
+    }
+
+    function init() {
+        if (state.inicializado) return;
+
+        root = document.querySelector(HISTORY_SELECTOR);
+
+        if (!root) return;
+
+        state.inicializado = true;
+
+        bindEvents();
+
+        const dadosElement = document.getElementById("historico-dados");
+
+        try {
+            if (!dadosElement) {
+                throw new Error(
+                    "Os dados do histórico não foram encontrados no HTML."
+                );
+            }
+
+            const records = JSON.parse(dadosElement.textContent || "[]");
+
+            definirRegistros(records);
+        } catch (error) {
+            console.error("Erro ao carregar o histórico:", error);
+            definirErro(true);
+        }
+    }
+
+    window.HistoricoMomentos = Object.freeze({
+        inicializar: init,
+        definirRegistros,
+        definirCarregamento,
+        definirErro,
+        limparFiltros: clearFilters,
+        obterEstado
+    });
+
+    if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", init, {
+            once: true
+        });
+    } else {
+        init();
+    }
+})();
+
