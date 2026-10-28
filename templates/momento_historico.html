@@ -1,0 +1,251 @@
+{% extends 'menu.html'%}
+{% block content%}
+<section class="historico-section" id="historico-momentos">
+
+    <header class="historico-header">
+        <div class="historico-eyebrow">
+            <span class="historico-eyebrow-icon">✦</span>
+            <span>SEU ESPAÇO, SUAS MEMÓRIAS</span>
+        </div>
+
+        <h1 class="historico-title">
+            Seus <span>momentos</span>
+        </h1>
+
+        <p class="historico-description">
+            Um lugar para revisitar o que você sentiu, viveu e guardou
+            de cada fase da sua história.
+        </p>
+
+        <div class="historico-decoration" aria-hidden="true">
+            <span></span>
+            <span>✧</span>
+            <span></span>
+        </div>
+    </header>
+
+
+    <nav class="historico-navigation" aria-label="Navegação do histórico">
+        <a
+            class="historico-back-link"
+            href="{{ url_for('profile') }}#momento-atual"
+            data-historico-voltar
+        >
+            <span aria-hidden="true">←</span>
+            Voltar ao meu momento
+        </a>
+
+        <span class="historico-counter" id="historico-contador">
+            <span aria-hidden="true">✦</span>
+            <span data-historico-total>0 registros</span>
+        </span>
+    </nav>
+
+
+    <main class="historico-content">
+
+
+        <section class="historico-intro">
+            <div class="historico-intro-symbol" aria-hidden="true">
+                ☾
+            </div>
+
+            <div class="historico-intro-text">
+                <h2>Sua linha do tempo</h2>
+                <p>
+                    Cada registro guarda um pedacinho de quem você era
+                    naquele instante.
+                </p>
+            </div>
+        </section>
+
+        <section class="historico-filtros" aria-label="Filtros do histórico">
+            <div class="historico-filtros-heading">
+                <span class="historico-filtros-label">Explorar registros</span>
+                <span class="historico-filtros-hint">
+                    Encontre um momento especial
+                </span>
+            </div>
+
+            <div class="historico-filtros-controls">
+
+                <label class="historico-filter-field">
+                    <span class="historico-sr-only">Filtrar por período</span>
+
+                    <select
+                        id="historico-filtro-periodo"
+                        name="periodo"
+                        data-historico-filtro="periodo"
+                    >
+                        <option value="todos">Todo o histórico</option>
+                        <option value="mes">Este mês</option>
+                        <option value="ano">Este ano</option>
+                    </select>
+                </label>
+
+                <label class="historico-filter-field">
+                    <span class="historico-sr-only">Filtrar por categoria</span>
+
+                    <select
+                        id="historico-filtro-categoria"
+                        name="categoria"
+                        data-historico-filtro="categoria"
+                    >
+                        <option value="todas">Todas as categorias</option>
+                        <option value="sentindo">♡ Sentindo</option>
+                        <option value="ouvindo">♪ Ouvindo</option>
+                        <option value="lendo">◇ Lendo</option>
+                        <option value="pensamento">✦ Minha mente</option>
+                        <option value="clima">☾ Clima do momento</option>
+                    </select>
+                </label>
+
+                <label class="historico-search">
+                    <span class="historico-search-icon" aria-hidden="true">
+                        ⌕
+                    </span>
+
+                    <span class="historico-sr-only">
+                        Buscar nos momentos
+                    </span>
+
+                    <input
+                        type="search"
+                        id="historico-busca"
+                        name="busca"
+                        placeholder="Buscar nos momentos..."
+                        autocomplete="off"
+                        data-historico-busca
+                    >
+                </label>
+
+            </div>
+        </section>
+
+        <section
+            class="historico-state historico-loading"
+            id="historico-carregando"
+            aria-live="polite"
+            hidden
+        >
+            <span class="historico-loading-symbol" aria-hidden="true">✧</span>
+            <p>Reunindo seus momentos...</p>
+        </section>
+
+        <section
+            class="historico-state historico-empty"
+            id="historico-vazio"
+            aria-live="polite"
+            hidden
+        >
+            <div class="historico-empty-orbit" aria-hidden="true">
+                <span class="historico-empty-star">✦</span>
+                <span class="historico-empty-moon">☾</span>
+                <span class="historico-empty-sparkle">✧</span>
+            </div>
+
+            <span class="historico-empty-eyebrow">
+                SUA HISTÓRIA COMEÇA AQUI
+            </span>
+
+            <h2>Há espaço para novas lembranças</h2>
+
+            <p>
+                Seus momentos registrados aparecerão aqui, formando uma
+                linha do tempo das coisas que fizeram parte de você.
+            </p>
+
+            <a
+                href="{{ url_for('profile') }}#momento-atual"
+                class="historico-empty-link"
+                data-historico-voltar
+            >
+                <span aria-hidden="true">✦</span>
+                Voltar ao meu momento
+            </a>
+        </section>
+
+        <section
+            class="historico-state historico-error"
+            id="historico-erro"
+            role="alert"
+            hidden
+        >
+            <span class="historico-error-icon" aria-hidden="true">✧</span>
+
+            <h2>Não foi possível abrir seus momentos</h2>
+
+            <p>
+                Tente novamente em instantes.
+            </p>
+
+            <button
+                type="button"
+                class="historico-retry-button"
+                data-historico-tentar-novamente
+            >
+                Tentar novamente
+            </button>
+        </section>
+
+        <section
+            class="historico-state historico-no-results"
+            id="historico-sem-resultados"
+            aria-live="polite"
+            hidden
+        >
+            <span class="historico-no-results-icon" aria-hidden="true">
+                ⌕
+            </span>
+
+            <h2>Nenhum momento encontrado</h2>
+
+            <p>
+                Experimente mudar os filtros ou usar outras palavras na busca.
+            </p>
+
+            <button
+                type="button"
+                class="historico-limpar-filtros"
+                data-historico-limpar-filtros
+            >
+                Limpar filtros
+            </button>
+        </section>
+
+
+        <section
+            class="historico-timeline"
+            id="historico-lista"
+            aria-label="Momentos registrados"
+            aria-live="polite"
+            hidden
+            data-historico-lista
+        >
+            <div
+                class="historico-timeline-track"
+                aria-hidden="true"
+            ></div>
+
+            <div
+                class="historico-registros"
+                id="historico-registros"
+                data-historico-registros
+            >
+
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="historico-footer">
+        <span class="historico-footer-symbol" aria-hidden="true">✧</span>
+
+        <p>
+            Você muda, cresce e descobre.
+            <span>Suas lembranças acompanham cada versão sua.</span>
+        </p>
+    </footer>
+</section>
+<script type="application/json" id="historico-dados">{{ registros_json | tojson }}</script>
+{% endblock %}
