@@ -2574,3 +2574,1027 @@ body{
 
     font-size: 0.9rem;
 }
+
+.historico-section {
+    --hist-purple: #a78bfa;
+    --hist-purple-light: #c4b5fd;
+    --hist-pink: #f0abfc;
+    --hist-text: #f5f0ff;
+    --hist-muted: #b8adc9;
+    --hist-border: rgba(196, 181, 253, 0.16);
+    --hist-surface: rgba(30, 21, 48, 0.62);
+    --hist-surface-hover: rgba(43, 29, 66, 0.78);
+
+    position: relative;
+    isolation: isolate;
+    width: 100%;
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 42px 28px 36px;
+    color: var(--hist-text);
+    font-family: inherit;
+    box-sizing: border-box;
+}
+
+.historico-section *,
+.historico-section *::before,
+.historico-section *::after {
+    box-sizing: border-box;
+}
+
+.historico-section [hidden] {
+    display: none !important;
+}
+
+.historico-section button,
+.historico-section input,
+.historico-section select {
+    font: inherit;
+}
+
+.historico-section button,
+.historico-section a,
+.historico-section select {
+    -webkit-tap-highlight-color: transparent;
+}
+
+.historico-section a {
+    color: inherit;
+    text-decoration: none;
+}
+
+.historico-section button:focus-visible,
+.historico-section a:focus-visible,
+.historico-section input:focus-visible,
+.historico-section select:focus-visible {
+    outline: 2px solid var(--hist-pink);
+    outline-offset: 4px;
+}
+
+.historico-sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+.historico-header {
+    position: relative;
+    text-align: center;
+    padding: 20px 0 30px;
+}
+
+.historico-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 9px;
+    margin-bottom: 17px;
+    color: var(--hist-purple-light);
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+}
+
+.historico-eyebrow-icon {
+    color: var(--hist-pink);
+    font-size: 1.05rem;
+    animation: historico-pulse 3s ease-in-out infinite;
+}
+
+.historico-title {
+    margin: 0;
+    color: var(--hist-text);
+    font-size: clamp(2.35rem, 5vw, 4rem);
+    font-weight: 600;
+    line-height: 1.13;
+    letter-spacing: -0.045em;
+}
+
+.historico-title span {
+    color: transparent;
+    background: linear-gradient(
+        110deg,
+        var(--hist-purple-light),
+        var(--hist-pink),
+        #d8b4fe
+    );
+    background-clip: text;
+    -webkit-background-clip: text;
+}
+
+.historico-description {
+    max-width: 540px;
+    margin: 18px auto 0;
+    color: var(--hist-muted);
+    font-size: 0.98rem;
+    line-height: 1.8;
+}
+
+.historico-decoration {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 13px;
+    margin-top: 26px;
+    color: var(--hist-pink);
+}
+
+.historico-decoration span:first-child,
+.historico-decoration span:last-child {
+    width: 52px;
+    height: 1px;
+    background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(196, 181, 253, 0.6)
+    );
+}
+
+.historico-decoration span:last-child {
+    transform: rotate(180deg);
+}
+
+.historico-navigation {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 18px;
+    padding: 18px 0;
+    margin-bottom: 25px;
+    border-top: 1px solid var(--hist-border);
+    border-bottom: 1px solid var(--hist-border);
+}
+
+.historico-back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--hist-muted) !important;
+    font-size: 0.88rem;
+    transition: color 0.25s ease, transform 0.25s ease;
+}
+
+.historico-back-link span {
+    color: var(--hist-purple-light);
+    font-size: 1.2rem;
+}
+
+.historico-back-link:hover {
+    color: var(--hist-text) !important;
+    transform: translateX(-3px);
+}
+
+.historico-counter {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 13px;
+    border: 1px solid var(--hist-border);
+    border-radius: 999px;
+    background: rgba(167, 139, 250, 0.07);
+    color: var(--hist-purple-light);
+    font-size: 0.78rem;
+    white-space: nowrap;
+}
+
+.historico-counter > span:first-child {
+    color: var(--hist-pink);
+}
+
+.historico-intro {
+    display: flex;
+    align-items: center;
+    gap: 17px;
+    margin: 36px 0 28px;
+}
+
+.historico-intro-symbol {
+    display: grid;
+    flex: 0 0 54px;
+    width: 54px;
+    height: 54px;
+    place-items: center;
+    border: 1px solid rgba(196, 181, 253, 0.22);
+    border-radius: 18px;
+    background: linear-gradient(
+        145deg,
+        rgba(167, 139, 250, 0.18),
+        rgba(240, 171, 252, 0.07)
+    );
+    color: var(--hist-pink);
+    font-size: 1.6rem;
+    box-shadow: 0 0 25px rgba(167, 139, 250, 0.08);
+}
+
+.historico-intro-text h2 {
+    margin: 0 0 7px;
+    color: var(--hist-text);
+    font-size: 1.35rem;
+    font-weight: 600;
+}
+
+.historico-intro-text p {
+    margin: 0;
+    color: var(--hist-muted);
+    font-size: 0.88rem;
+    line-height: 1.65;
+}
+
+.historico-filtros {
+    position: relative;
+    padding: 22px;
+    border: 1px solid var(--hist-border);
+    border-radius: 22px;
+    background: var(--hist-surface);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    box-shadow: 0 14px 40px rgba(8, 4, 20, 0.13);
+}
+
+.historico-filtros-heading {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 17px;
+}
+
+.historico-filtros-label {
+    color: var(--hist-text);
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+.historico-filtros-hint {
+    color: var(--hist-muted);
+    font-size: 0.76rem;
+}
+
+.historico-filtros-controls {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(220px, 1.4fr);
+    gap: 12px;
+}
+
+.historico-filter-field,
+.historico-search {
+    position: relative;
+    display: flex;
+    align-items: center;
+    min-width: 0;
+}
+
+.historico-filter-field select,
+.historico-search input {
+    width: 100%;
+    min-width: 0;
+    min-height: 46px;
+    padding: 11px 13px;
+    border: 1px solid rgba(196, 181, 253, 0.17);
+    border-radius: 13px;
+    background-color: rgba(13, 9, 24, 0.58);
+    color: var(--hist-text);
+    font-size: 0.83rem;
+    transition:
+        border-color 0.25s ease,
+        background-color 0.25s ease,
+        box-shadow 0.25s ease;
+}
+
+.historico-filter-field select {
+    cursor: pointer;
+}
+
+.historico-filter-field select option {
+    background: #21172f;
+    color: #f5f0ff;
+}
+
+.historico-search {
+    gap: 9px;
+    padding-left: 12px;
+    border: 1px solid rgba(196, 181, 253, 0.17);
+    border-radius: 13px;
+    background: rgba(13, 9, 24, 0.58);
+    color: var(--hist-purple-light);
+    transition:
+        border-color 0.25s ease,
+        box-shadow 0.25s ease;
+}
+
+.historico-search:focus-within,
+.historico-filter-field:focus-within select {
+    border-color: rgba(196, 181, 253, 0.65);
+    box-shadow: 0 0 0 3px rgba(167, 139, 250, 0.08);
+}
+
+.historico-search-icon {
+    flex: 0 0 auto;
+    font-size: 1.5rem;
+    line-height: 1;
+}
+
+.historico-search input {
+    min-height: 44px;
+    padding-left: 0;
+    border: 0;
+    outline: 0;
+    background: transparent;
+    box-shadow: none;
+}
+
+.historico-search input:focus-visible {
+    outline: none;
+}
+
+.historico-search input::placeholder {
+    color: #8f83a4;
+    opacity: 1;
+}
+
+.historico-timeline {
+    position: relative;
+    margin-top: 40px;
+}
+
+.historico-timeline-track {
+    position: absolute;
+    top: 9px;
+    bottom: 12px;
+    left: 18px;
+    width: 1px;
+    background: linear-gradient(
+        180deg,
+        rgba(196, 181, 253, 0.65),
+        rgba(240, 171, 252, 0.25),
+        transparent
+    );
+}
+
+.historico-registros {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    min-width: 0;
+    padding-left: 52px;
+}
+
+.historico-date-group {
+    position: relative;
+    margin: 0 0 8px;
+    color: var(--hist-purple-light);
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.07em;
+}
+
+.historico-date-group::before {
+    content: "";
+    position: absolute;
+    top: 2px;
+    left: -41px;
+    width: 12px;
+    height: 12px;
+    border: 2px solid #c4b5fd;
+    border-radius: 50%;
+    background: #21172f;
+    box-shadow: 0 0 13px rgba(196, 181, 253, 0.35);
+}
+
+.historico-card {
+    position: relative;
+    min-width: 0;
+    padding: 23px;
+    overflow: hidden;
+    border: 1px solid var(--hist-border);
+    border-radius: 22px;
+    background: var(--hist-surface);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    box-shadow: 0 12px 35px rgba(8, 4, 20, 0.12);
+    transition:
+        border-color 0.3s ease,
+        background-color 0.3s ease,
+        transform 0.3s ease,
+        box-shadow 0.3s ease;
+}
+
+.historico-card::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 23px;
+    width: 70px;
+    height: 1px;
+    background: linear-gradient(
+        90deg,
+        var(--hist-purple-light),
+        var(--hist-pink),
+        transparent
+    );
+    opacity: 0.8;
+}
+
+.historico-card:hover {
+    border-color: rgba(196, 181, 253, 0.3);
+    background: var(--hist-surface-hover);
+    box-shadow: 0 18px 42px rgba(8, 4, 20, 0.2);
+    transform: translateY(-2px);
+}
+
+.historico-card-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 20px;
+}
+
+.historico-card-date {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    min-width: 0;
+}
+
+.historico-card-date strong {
+    color: var(--hist-text);
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.historico-card-date span {
+    color: var(--hist-muted);
+    font-size: 0.78rem;
+}
+
+.historico-card-decoration {
+    flex: 0 0 auto;
+    color: var(--hist-pink);
+    font-size: 1.15rem;
+    opacity: 0.9;
+}
+
+.historico-card-content {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.historico-item {
+    min-width: 0;
+    padding: 15px;
+    border: 1px solid rgba(196, 181, 253, 0.1);
+    border-radius: 15px;
+    background: rgba(14, 9, 26, 0.27);
+}
+
+.historico-item-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 9px;
+    color: var(--hist-purple-light);
+    font-size: 0.76rem;
+    font-weight: 600;
+}
+
+.historico-item-icon {
+    flex: 0 0 auto;
+    color: var(--hist-pink);
+    font-size: 1rem;
+}
+
+.historico-item-value {
+    overflow-wrap: anywhere;
+    color: var(--hist-text);
+    font-size: 0.88rem;
+    line-height: 1.7;
+    white-space: pre-wrap;
+}
+
+.historico-item--pensamento {
+    grid-column: 1 / -1;
+}
+
+.historico-item--clima {
+    grid-column: 1 / -1;
+}
+
+.historico-card-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: 20px;
+    padding-top: 15px;
+    border-top: 1px solid rgba(196, 181, 253, 0.1);
+}
+
+.historico-card-updated {
+    color: var(--hist-muted);
+    font-size: 0.74rem;
+    line-height: 1.5;
+}
+
+.historico-expand-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 9px 12px;
+    border: 1px solid rgba(196, 181, 253, 0.2);
+    border-radius: 11px;
+    background: rgba(167, 139, 250, 0.08);
+    color: var(--hist-purple-light);
+    font-size: 0.77rem;
+    cursor: pointer;
+    transition:
+        background-color 0.25s ease,
+        border-color 0.25s ease,
+        color 0.25s ease;
+}
+
+.historico-expand-button:hover {
+    border-color: rgba(240, 171, 252, 0.45);
+    background: rgba(167, 139, 250, 0.15);
+    color: var(--hist-text);
+}
+
+.historico-card-details[hidden] {
+    display: none !important;
+}
+
+.historico-card-details {
+    margin-top: 15px;
+    padding: 17px;
+    border: 1px solid rgba(196, 181, 253, 0.12);
+    border-radius: 15px;
+    background: rgba(13, 9, 24, 0.32);
+    animation: historico-appear 0.25s ease both;
+}
+
+.historico-card-details h3 {
+    margin: 0 0 9px;
+    color: var(--hist-purple-light);
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.historico-card-details p {
+    margin: 0;
+    color: var(--hist-text);
+    font-size: 0.86rem;
+    line-height: 1.8;
+    overflow-wrap: anywhere;
+    white-space: pre-wrap;
+}
+
+.historico-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 270px;
+    margin-top: 30px;
+    padding: 35px 25px;
+    border: 1px solid var(--hist-border);
+    border-radius: 24px;
+    background: var(--hist-surface);
+    text-align: center;
+}
+
+.historico-state h2 {
+    margin: 0 0 12px;
+    color: var(--hist-text);
+    font-size: clamp(1.2rem, 3vw, 1.55rem);
+    font-weight: 600;
+    line-height: 1.4;
+}
+
+.historico-state p {
+    max-width: 440px;
+    margin: 0;
+    color: var(--hist-muted);
+    font-size: 0.9rem;
+    line-height: 1.8;
+}
+
+.historico-loading {
+    gap: 16px;
+}
+
+.historico-loading-symbol {
+    color: var(--hist-pink);
+    font-size: 2.3rem;
+    animation: historico-spin 2.5s linear infinite;
+}
+
+
+
+.historico-empty {
+    padding-top: 43px;
+    padding-bottom: 43px;
+}
+
+.historico-empty-orbit {
+    position: relative;
+    display: grid;
+    width: 106px;
+    height: 106px;
+    place-items: center;
+    margin-bottom: 25px;
+    border: 1px solid rgba(196, 181, 253, 0.18);
+    border-radius: 50%;
+    background: radial-gradient(
+        circle,
+        rgba(167, 139, 250, 0.13),
+        rgba(167, 139, 250, 0.02) 68%
+    );
+    box-shadow: 0 0 45px rgba(167, 139, 250, 0.08);
+}
+
+.historico-empty-star {
+    color: var(--hist-purple-light);
+    font-size: 2rem;
+}
+
+.historico-empty-moon {
+    position: absolute;
+    top: 7px;
+    right: 7px;
+    color: var(--hist-pink);
+    font-size: 1.35rem;
+}
+
+.historico-empty-sparkle {
+    position: absolute;
+    bottom: 11px;
+    left: 8px;
+    color: var(--hist-purple-light);
+    font-size: 1.15rem;
+}
+
+.historico-empty-eyebrow {
+    margin-bottom: 12px;
+    color: var(--hist-pink);
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+}
+
+.historico-empty-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 9px;
+    margin-top: 25px;
+    padding: 12px 18px;
+    border: 1px solid rgba(196, 181, 253, 0.27);
+    border-radius: 13px;
+    background: linear-gradient(
+        110deg,
+        rgba(167, 139, 250, 0.15),
+        rgba(240, 171, 252, 0.08)
+    );
+    color: var(--hist-text) !important;
+    font-size: 0.84rem;
+    transition:
+        transform 0.25s ease,
+        border-color 0.25s ease,
+        box-shadow 0.25s ease;
+}
+
+.historico-empty-link span {
+    color: var(--hist-pink);
+}
+
+.historico-empty-link:hover {
+    transform: translateY(-2px);
+    border-color: rgba(240, 171, 252, 0.5);
+    box-shadow: 0 8px 25px rgba(167, 139, 250, 0.12);
+}
+
+
+.historico-error-icon,
+.historico-no-results-icon {
+    margin-bottom: 15px;
+    color: var(--hist-pink);
+    font-size: 2rem;
+}
+
+.historico-retry-button,
+.historico-limpar-filtros {
+    margin-top: 22px;
+    padding: 11px 17px;
+    border: 1px solid rgba(196, 181, 253, 0.25);
+    border-radius: 12px;
+    background: rgba(167, 139, 250, 0.1);
+    color: var(--hist-text);
+    cursor: pointer;
+    transition:
+        background-color 0.25s ease,
+        border-color 0.25s ease;
+}
+
+.historico-retry-button:hover,
+.historico-limpar-filtros:hover {
+    border-color: rgba(240, 171, 252, 0.5);
+    background: rgba(167, 139, 250, 0.18);
+}
+
+.historico-footer {
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    gap: 11px;
+    margin-top: 45px;
+    padding-top: 25px;
+    border-top: 1px solid var(--hist-border);
+    text-align: left;
+}
+
+.historico-footer-symbol {
+    padding-top: 2px;
+    color: var(--hist-pink);
+    font-size: 1.1rem;
+}
+
+.historico-footer p {
+    max-width: 420px;
+    margin: 0;
+    color: var(--hist-muted);
+    font-size: 0.81rem;
+    line-height: 1.8;
+}
+
+.historico-footer p span {
+    display: block;
+    color: var(--hist-purple-light);
+}
+
+@keyframes historico-pulse {
+    0%,
+    100% {
+        opacity: 0.7;
+        transform: scale(1);
+    }
+
+    50% {
+        opacity: 1;
+        transform: scale(1.12);
+    }
+}
+
+@keyframes historico-spin {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+@keyframes historico-appear {
+    from {
+        opacity: 0;
+        transform: translateY(5px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+
+@media (max-width: 800px) {
+    .historico-section {
+        padding: 32px 22px;
+    }
+
+    .historico-filtros-controls {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .historico-search {
+        grid-column: 1 / -1;
+    }
+
+    .historico-filtros {
+        padding: 19px;
+    }
+
+    .historico-card {
+        padding: 19px;
+    }
+}
+
+@media (max-width: 520px) {
+    .historico-section {
+        padding: 24px 15px 28px;
+    }
+
+    .historico-header {
+        padding-top: 12px;
+        padding-bottom: 24px;
+    }
+
+    .historico-eyebrow {
+        gap: 7px;
+        font-size: 0.61rem;
+        letter-spacing: 0.14em;
+    }
+
+    .historico-title {
+        font-size: clamp(2.1rem, 10vw, 3rem);
+    }
+
+    .historico-description {
+        margin-top: 13px;
+        font-size: 0.88rem;
+        line-height: 1.75;
+    }
+
+    .historico-navigation {
+        align-items: flex-start;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-bottom: 22px;
+    }
+
+    .historico-back-link {
+        font-size: 0.81rem;
+    }
+
+    .historico-counter {
+        padding: 7px 10px;
+        font-size: 0.72rem;
+    }
+
+    .historico-intro {
+        align-items: flex-start;
+        gap: 12px;
+        margin-top: 27px;
+    }
+
+    .historico-intro-symbol {
+        flex-basis: 45px;
+        width: 45px;
+        height: 45px;
+        border-radius: 15px;
+        font-size: 1.4rem;
+    }
+
+    .historico-intro-text h2 {
+        font-size: 1.15rem;
+    }
+
+    .historico-intro-text p {
+        font-size: 0.81rem;
+    }
+
+    .historico-filtros {
+        padding: 16px;
+        border-radius: 18px;
+    }
+
+    .historico-filtros-heading {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 5px;
+    }
+
+    .historico-filtros-hint {
+        font-size: 0.72rem;
+    }
+
+    .historico-filtros-controls {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 10px;
+    }
+
+    .historico-search {
+        grid-column: auto;
+    }
+
+    .historico-timeline {
+        margin-top: 30px;
+    }
+
+    .historico-timeline-track {
+        left: 8px;
+    }
+
+    .historico-registros {
+        gap: 19px;
+        padding-left: 27px;
+    }
+
+    .historico-date-group::before {
+        left: -25px;
+        width: 10px;
+        height: 10px;
+    }
+
+    .historico-card {
+        padding: 16px;
+        border-radius: 18px;
+    }
+
+    .historico-card::before {
+        left: 16px;
+        width: 55px;
+    }
+
+    .historico-card-header {
+        gap: 10px;
+        margin-bottom: 15px;
+    }
+
+    .historico-card-date strong {
+        font-size: 0.91rem;
+    }
+
+    .historico-card-date span {
+        font-size: 0.73rem;
+    }
+
+    .historico-card-content {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 9px;
+    }
+
+    .historico-item,
+    .historico-item--pensamento,
+    .historico-item--clima {
+        grid-column: auto;
+        padding: 13px;
+    }
+
+    .historico-item-label {
+        margin-bottom: 7px;
+        font-size: 0.75rem;
+    }
+
+    .historico-item-value {
+        font-size: 0.84rem;
+    }
+
+    .historico-card-footer {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .historico-expand-button {
+        width: 100%;
+    }
+
+    .historico-state {
+        min-height: 240px;
+        padding: 28px 18px;
+        border-radius: 19px;
+    }
+
+    .historico-state p {
+        font-size: 0.84rem;
+    }
+
+    .historico-empty-orbit {
+        width: 88px;
+        height: 88px;
+    }
+
+    .historico-empty-link {
+        max-width: 100%;
+        font-size: 0.79rem;
+    }
+
+    .historico-footer {
+        margin-top: 32px;
+    }
+
+    .historico-footer p {
+        font-size: 0.76rem;
+    }
+
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .historico-section *,
+    .historico-section *::before,
+    .historico-section *::after {
+        scroll-behavior: auto !important;
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
